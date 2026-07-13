@@ -1,0 +1,2 @@
+# ClaimGraph intentionally uses only the Python standard library.
+# This keeps the benchmark reproducible and makes Ollama the only optional service.

@@ -1,0 +1,18 @@
+{
+  "node_types": {
+    "Document": ["source", "version", "domain", "sha256"],
+    "Clause": ["text", "citation_id", "modality", "concepts", "is_current"],
+    "Concept": ["label"],
+    "Version": ["source", "label"],
+    "Authority": ["role"]
+  },
+  "edge_types": {
+    "DERIVED_FROM": "Clause -> Document",
+    "VALID_IN": "Clause -> Version",
+    "APPLIES_TO": "Clause -> Concept",
+    "SUPPORTS": "Clause -> Clause",
+    "CONTRADICTS": "Clause -> Clause",
+    "OVERRIDES": "Document -> Document",
+    "GOVERNED_BY": "Document -> Authority"
+  }
+}

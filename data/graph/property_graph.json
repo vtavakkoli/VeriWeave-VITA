@@ -1,0 +1,2329 @@
+{
+  "schema": {
+    "node_types": [
+      "Authority",
+      "Clause",
+      "Concept",
+      "Document",
+      "Version"
+    ],
+    "edge_types": [
+      "APPLIES_TO",
+      "CONTRADICTS",
+      "DERIVED_FROM",
+      "GOVERNED_BY",
+      "HAS_VERSION",
+      "OVERRIDES",
+      "SUPPORTS",
+      "VALID_IN"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "authority:enterprise-policy-owner",
+      "type": "Authority",
+      "label": "Enterprise Policy Owner",
+      "properties": {
+        "role": "governance"
+      }
+    },
+    {
+      "id": "clause:city_data_protection_policy.md:data-protection",
+      "type": "Clause",
+      "label": "data-protection",
+      "properties": {
+        "text": "Processing personal data, citizen images, biometric-like attributes, or sensitive case information requires a documented lawful purpose, data minimization, retention limits, and data-protection review before deployment. Non-anonymized data must not be sent to an external service unless an approved transfer basis and safeguards are documented.",
+        "source": "city_data_protection_policy.md",
+        "version": "v1",
+        "domain": "data_protection_privacy",
+        "citation_id": "city_data_protection_policy.md#data-protection@v1",
+        "modality": "prohibition",
+        "concepts": [
+          "external-service",
+          "personal-data",
+          "transparency"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "5c5466fb23c5",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:city_data_protection_policy.md:prohibited-use",
+      "type": "Clause",
+      "label": "prohibited-use",
+      "properties": {
+        "text": "A system must not infer sensitive attributes or make fully automated adverse decisions about citizens without explicit legal authorization, human review, and documented safeguards.",
+        "source": "city_data_protection_policy.md",
+        "version": "v1",
+        "domain": "data_protection_privacy",
+        "citation_id": "city_data_protection_policy.md#prohibited-use@v1",
+        "modality": "prohibition",
+        "concepts": [
+          "access-control",
+          "high-impact",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "5c5466fb23c5",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:city_data_protection_policy.md:transparency",
+      "type": "Clause",
+      "label": "transparency",
+      "properties": {
+        "text": "Public-facing systems must provide clear notice about AI-assisted processing, the decision purpose, responsible owner, and available appeal or contact channel.",
+        "source": "city_data_protection_policy.md",
+        "version": "v1",
+        "domain": "data_protection_privacy",
+        "citation_id": "city_data_protection_policy.md#transparency@v1",
+        "modality": "obligation",
+        "concepts": [
+          "transparency"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "5c5466fb23c5",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:cloud_procurement_policy.md:accountability",
+      "type": "Clause",
+      "label": "accountability",
+      "properties": {
+        "text": "Each external AI service must have a named internal owner, vendor contact, risk classification, review schedule, and incident-escalation path.",
+        "source": "cloud_procurement_policy.md",
+        "version": "v1",
+        "domain": "procurement_cloud",
+        "citation_id": "cloud_procurement_policy.md#accountability@v1",
+        "modality": "obligation",
+        "concepts": [
+          "external-service"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "bdf0c72b74ec",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:cloud_procurement_policy.md:external-cloud",
+      "type": "Clause",
+      "label": "external-cloud",
+      "properties": {
+        "text": "External cloud or vendor processing requires procurement approval, security review, data-protection review, exit planning, and a documented service owner. Test phases do not remove these obligations.",
+        "source": "cloud_procurement_policy.md",
+        "version": "v1",
+        "domain": "procurement_cloud",
+        "citation_id": "cloud_procurement_policy.md#external-cloud@v1",
+        "modality": "obligation",
+        "concepts": [
+          "external-service",
+          "rollback"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "bdf0c72b74ec",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:cloud_procurement_policy.md:policy-conflict",
+      "type": "Clause",
+      "label": "policy-conflict",
+      "properties": {
+        "text": "When cloud procurement rules conflict with a less strict local guideline, the stricter applicable control must be followed until a policy owner resolves the conflict.",
+        "source": "cloud_procurement_policy.md",
+        "version": "v1",
+        "domain": "procurement_cloud",
+        "citation_id": "cloud_procurement_policy.md#policy-conflict@v1",
+        "modality": "obligation",
+        "concepts": [],
+        "relation_hint": "conflict",
+        "is_current": true,
+        "sha256": "bdf0c72b74ec",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:cybersecurity_access_control_policy.md:access-control",
+      "type": "Clause",
+      "label": "access-control",
+      "properties": {
+        "text": "Policy-aware AI tools must enforce role-based access, least privilege, and source-level authorization. Retrieval must not expose policy documents or case records outside the user's approved scope.",
+        "source": "cybersecurity_access_control_policy.md",
+        "version": "v1",
+        "domain": "cybersecurity_access_control",
+        "citation_id": "cybersecurity_access_control_policy.md#access-control@v1",
+        "modality": "prohibition",
+        "concepts": [
+          "access-control",
+          "auditability"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "1547e1c29e01",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "type": "Clause",
+      "label": "audit-trail",
+      "properties": {
+        "text": "Every AI-assisted decision record must store timestamp, question, selected graph query and validation path, retrieved evidence, citations, final decision, confidence, human-review flag, prompt version, model version, policy versions, policy hashes, and responsible owner.",
+        "source": "cybersecurity_access_control_policy.md",
+        "version": "v1",
+        "domain": "cybersecurity_access_control",
+        "citation_id": "cybersecurity_access_control_policy.md#audit-trail@v1",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "human-review",
+          "policy-version"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "1547e1c29e01",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "type": "Clause",
+      "label": "evidence-grounding",
+      "properties": {
+        "text": "Generated decisions must cite supporting policy evidence. Unsupported claims, irrelevant citations, and citation-decision mismatches require correction or human review.",
+        "source": "cybersecurity_access_control_policy.md",
+        "version": "v1",
+        "domain": "cybersecurity_access_control",
+        "citation_id": "cybersecurity_access_control_policy.md#evidence-grounding@v1",
+        "modality": "obligation",
+        "concepts": [
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "1547e1c29e01",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "type": "Clause",
+      "label": "high-risk-ai",
+      "properties": {
+        "text": "AI systems used for eligibility, access to public services, education, employment, or law-enforcement support are treated as high-risk and require documented risk management, data governance, logging, transparency, and human oversight.",
+        "source": "eu_ai_act_sample.md",
+        "version": "v1",
+        "domain": "eu-ai-act-sample",
+        "citation_id": "eu_ai_act_sample.md#high-risk-ai@v1",
+        "modality": "guidance",
+        "concepts": [
+          "auditability",
+          "high-impact",
+          "human-review",
+          "transparency"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f29171746bfb",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:eu_ai_act_sample.md:human-review",
+      "type": "Clause",
+      "label": "human-review",
+      "properties": {
+        "text": "High-impact or adverse recommendations require a trained human reviewer before implementation. The reviewer must be able to inspect evidence, override the system, and record justification.",
+        "source": "eu_ai_act_sample.md",
+        "version": "v1",
+        "domain": "eu-ai-act-sample",
+        "citation_id": "eu_ai_act_sample.md#human-review@v1",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "high-impact",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f29171746bfb",
+        "ordinal": 4
+      }
+    },
+    {
+      "id": "clause:eu_ai_act_sample.md:prohibited-use",
+      "type": "Clause",
+      "label": "prohibited-use",
+      "properties": {
+        "text": "AI systems must not manipulate vulnerable people, infer sensitive traits without a lawful basis, or make fully automated adverse decisions about citizens without contestability and meaningful human review.",
+        "source": "eu_ai_act_sample.md",
+        "version": "v1",
+        "domain": "eu-ai-act-sample",
+        "citation_id": "eu_ai_act_sample.md#prohibited-use@v1",
+        "modality": "prohibition",
+        "concepts": [
+          "high-impact",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f29171746bfb",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:eu_ai_act_sample.md:transparency",
+      "type": "Clause",
+      "label": "transparency",
+      "properties": {
+        "text": "Users and affected people should receive clear notice when AI materially supports a decision. The notice should explain purpose, limitations, data categories, and how to request review.",
+        "source": "eu_ai_act_sample.md",
+        "version": "v1",
+        "domain": "eu-ai-act-sample",
+        "citation_id": "eu_ai_act_sample.md#transparency@v1",
+        "modality": "guidance",
+        "concepts": [
+          "transparency"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f29171746bfb",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "type": "Clause",
+      "label": "accessibility-fairness",
+      "properties": {
+        "text": "Public-facing or employee-facing systems must be checked for accessibility, language fairness, bias risks, and explainability before production use.",
+        "source": "hr_workplace_ai_policy.md",
+        "version": "v1",
+        "domain": "hr_workplace_ai",
+        "citation_id": "hr_workplace_ai_policy.md#accessibility-fairness@v1",
+        "modality": "obligation",
+        "concepts": [
+          "fairness",
+          "transparency"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "5396bcc689b2",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "type": "Clause",
+      "label": "high-risk-ai",
+      "properties": {
+        "text": "AI systems used for employee evaluation, recruitment ranking, disciplinary support, work allocation, or eligibility-like decisions are treated as high-impact workplace systems and require human review.",
+        "source": "hr_workplace_ai_policy.md",
+        "version": "v1",
+        "domain": "hr_workplace_ai",
+        "citation_id": "hr_workplace_ai_policy.md#high-risk-ai@v1",
+        "modality": "guidance",
+        "concepts": [
+          "high-impact",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "5396bcc689b2",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:hr_workplace_ai_policy.md:human-review",
+      "type": "Clause",
+      "label": "human-review",
+      "properties": {
+        "text": "Human review must occur before an adverse or high-impact decision is finalized. A post-hoc review after implementation is not sufficient.",
+        "source": "hr_workplace_ai_policy.md",
+        "version": "v1",
+        "domain": "hr_workplace_ai",
+        "citation_id": "hr_workplace_ai_policy.md#human-review@v1",
+        "modality": "obligation",
+        "concepts": [
+          "high-impact",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "5396bcc689b2",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:internal_department_policy_sample.md:audit-trail",
+      "type": "Clause",
+      "label": "audit-trail",
+      "properties": {
+        "text": "AI-assisted decisions must produce an audit trail containing input question, retrieved policy evidence, reasoning summary, decision, confidence, human review flag, and timestamp.",
+        "source": "internal_department_policy_sample.md",
+        "version": "v1",
+        "domain": "internal-department-policy-sample",
+        "citation_id": "internal_department_policy_sample.md#audit-trail@v1",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "cb6e471397d7",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "type": "Clause",
+      "label": "evidence-grounding",
+      "properties": {
+        "text": "Recommendations must cite policy sections and distinguish mandatory requirements from optional good practice. Unsupported recommendations must be marked as uncertain.",
+        "source": "internal_department_policy_sample.md",
+        "version": "v1",
+        "domain": "internal-department-policy-sample",
+        "citation_id": "internal_department_policy_sample.md#evidence-grounding@v1",
+        "modality": "obligation",
+        "concepts": [],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "cb6e471397d7",
+        "ordinal": 4
+      }
+    },
+    {
+      "id": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "type": "Clause",
+      "label": "pilot-deployment",
+      "properties": {
+        "text": "Pilot deployments are allowed for low-risk administrative support if no sensitive personal data leaves approved systems and a rollback plan is documented.",
+        "source": "internal_department_policy_sample.md",
+        "version": "v1",
+        "domain": "internal-department-policy-sample",
+        "citation_id": "internal_department_policy_sample.md#pilot-deployment@v1",
+        "modality": "permission",
+        "concepts": [
+          "personal-data",
+          "rollback"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "cb6e471397d7",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:internal_department_policy_sample.md:policy-conflict",
+      "type": "Clause",
+      "label": "policy-conflict",
+      "properties": {
+        "text": "If internal guidance conflicts with statutory or public-sector rules, the stricter rule applies and escalation to the policy owner is required.",
+        "source": "internal_department_policy_sample.md",
+        "version": "v1",
+        "domain": "internal-department-policy-sample",
+        "citation_id": "internal_department_policy_sample.md#policy-conflict@v1",
+        "modality": "obligation",
+        "concepts": [],
+        "relation_hint": "conflict",
+        "is_current": true,
+        "sha256": "cb6e471397d7",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:model_governance_sample.md:access-control",
+      "type": "Clause",
+      "label": "access-control",
+      "properties": {
+        "text": "Policy repositories may contain restricted documents. Retrieval must respect user role, department scope, and document sensitivity. Sensitive personal data must not be sent to an external service unless there is explicit approval and documented safeguards.",
+        "source": "model_governance_sample.md",
+        "version": "v1",
+        "domain": "model-governance-sample",
+        "citation_id": "model_governance_sample.md#access-control@v1",
+        "modality": "prohibition",
+        "concepts": [
+          "access-control",
+          "external-service",
+          "personal-data"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "41180f3262e6",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:model_governance_sample.md:audit-trail",
+      "type": "Clause",
+      "label": "audit-trail",
+      "properties": {
+        "text": "The audit trail must include question, selected graph query and validation path, evidence citations, reasoning summary, final decision, confidence, human-review flag, policy versions, policy hashes, and timestamp. Audit records must be exportable for internal or external review.",
+        "source": "model_governance_sample.md",
+        "version": "v1",
+        "domain": "model-governance-sample",
+        "citation_id": "model_governance_sample.md#audit-trail@v1",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "human-review",
+          "policy-version"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "41180f3262e6",
+        "ordinal": 4
+      }
+    },
+    {
+      "id": "clause:model_governance_sample.md:evidence-grounding",
+      "type": "Clause",
+      "label": "evidence-grounding",
+      "properties": {
+        "text": "Policy-aware AI systems must ground every recommendation in retrieved policy evidence. Unsupported claims, uncited recommendations, or claims that contradict cited evidence must be flagged for review.",
+        "source": "model_governance_sample.md",
+        "version": "v1",
+        "domain": "model-governance-sample",
+        "citation_id": "model_governance_sample.md#evidence-grounding@v1",
+        "modality": "obligation",
+        "concepts": [],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "41180f3262e6",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:model_governance_sample.md:model-governance",
+      "type": "Clause",
+      "label": "model-governance",
+      "properties": {
+        "text": "AI-assisted decisions must record model identifier, model version, prompt version or graph-schema or validation-rule version, configuration, timestamp, and responsible owner. A decision that cannot be reproduced from the recorded evidence and configuration is not considered governance-ready.",
+        "source": "model_governance_sample.md",
+        "version": "v1",
+        "domain": "model-governance-sample",
+        "citation_id": "model_governance_sample.md#model-governance@v1",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "policy-version"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "41180f3262e6",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:pilot_policy_v1.md:pilot-deployment",
+      "type": "Clause",
+      "label": "pilot-deployment",
+      "properties": {
+        "text": "Low-risk pilots may start with monitoring, fallback procedures, and user communication. High-risk pilots or pilots involving sensitive data require human review before activation.",
+        "source": "pilot_policy_v1.md",
+        "version": "v1",
+        "domain": "pilot-policy-v1",
+        "citation_id": "pilot_policy_v1.md#pilot-deployment@v1",
+        "modality": "permission",
+        "concepts": [
+          "high-impact",
+          "human-review",
+          "personal-data",
+          "rollback"
+        ],
+        "relation_hint": "support",
+        "is_current": false,
+        "sha256": "5d5786af0647",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:pilot_policy_v1.md:pilot-policy-v1",
+      "type": "Clause",
+      "label": "pilot-policy-v1",
+      "properties": {
+        "text": "A limited AI pilot may use external generative AI services for non-sensitive administrative content when a pilot owner is named and rollback criteria are documented. Sensitive personal data and citizen images are excluded unless separate approval exists.",
+        "source": "pilot_policy_v1.md",
+        "version": "v1",
+        "domain": "pilot-policy-v1",
+        "citation_id": "pilot_policy_v1.md#pilot-policy-v1@v1",
+        "modality": "permission",
+        "concepts": [
+          "personal-data",
+          "rollback"
+        ],
+        "relation_hint": "support",
+        "is_current": false,
+        "sha256": "5d5786af0647",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:pilot_policy_v2.md:pilot-policy-v2",
+      "type": "Clause",
+      "label": "pilot-policy-v2",
+      "properties": {
+        "text": "The current pilot policy requires a named responsible owner, policy-version logging, security assessment, data-protection review, rollback criteria, and review before any external generative AI pilot can proceed. Pilots without a named owner are not allowed.",
+        "source": "pilot_policy_v2.md",
+        "version": "v2",
+        "domain": "pilot-policy-v2",
+        "citation_id": "pilot_policy_v2.md#pilot-policy-v2@v2",
+        "modality": "prohibition",
+        "concepts": [
+          "auditability",
+          "policy-version",
+          "rollback"
+        ],
+        "relation_hint": "version",
+        "is_current": true,
+        "sha256": "3b3126d8d530",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:pilot_policy_v2.md:policy-update",
+      "type": "Clause",
+      "label": "policy-update",
+      "properties": {
+        "text": "When policy versions conflict, the current approved version applies. Decisions must cite the policy version used and record the policy hash to support later audit reconstruction.",
+        "source": "pilot_policy_v2.md",
+        "version": "v2",
+        "domain": "pilot-policy-v2",
+        "citation_id": "pilot_policy_v2.md#policy-update@v2",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "policy-version"
+        ],
+        "relation_hint": "conflict",
+        "is_current": true,
+        "sha256": "3b3126d8d530",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:public_sector_case_policy.md:high-risk-ai",
+      "type": "Clause",
+      "label": "high-risk-ai",
+      "properties": {
+        "text": "AI support for benefit eligibility, essential public services, citizen ranking, or adverse administrative outcomes requires high-risk classification, human oversight, logging, and policy-owner approval.",
+        "source": "public_sector_case_policy.md",
+        "version": "v1",
+        "domain": "public_sector_case_study",
+        "citation_id": "public_sector_case_policy.md#high-risk-ai@v1",
+        "modality": "obligation",
+        "concepts": [
+          "auditability",
+          "high-impact",
+          "human-review"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "e2c5d53be7ed",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:public_sector_case_policy.md:pilot-deployment",
+      "type": "Clause",
+      "label": "pilot-deployment",
+      "properties": {
+        "text": "A pilot may start only with documented scope, rollback plan, monitoring plan, owner, data-protection assessment, security review, and user-facing transparency notice.",
+        "source": "public_sector_case_policy.md",
+        "version": "v1",
+        "domain": "public_sector_case_study",
+        "citation_id": "public_sector_case_policy.md#pilot-deployment@v1",
+        "modality": "permission",
+        "concepts": [
+          "rollback",
+          "transparency"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "e2c5d53be7ed",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "clause:public_sector_case_policy.md:policy-update",
+      "type": "Clause",
+      "label": "policy-update",
+      "properties": {
+        "text": "When a newer policy version changes owner, rollback, review, or audit requirements, the current policy version must be applied and logged.",
+        "source": "public_sector_case_policy.md",
+        "version": "v1",
+        "domain": "public_sector_case_study",
+        "citation_id": "public_sector_case_policy.md#policy-update@v1",
+        "modality": "obligation",
+        "concepts": [
+          "policy-version",
+          "rollback"
+        ],
+        "relation_hint": "version",
+        "is_current": true,
+        "sha256": "e2c5d53be7ed",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:public_sector_guideline_sample.md:accessibility-fairness",
+      "type": "Clause",
+      "label": "accessibility-fairness",
+      "properties": {
+        "text": "Systems must be assessed for accessibility, language fairness, and disproportionate impacts on protected or vulnerable groups before deployment.",
+        "source": "public_sector_guideline_sample.md",
+        "version": "v1",
+        "domain": "public-sector-guideline-sample",
+        "citation_id": "public_sector_guideline_sample.md#accessibility-fairness@v1",
+        "modality": "obligation",
+        "concepts": [
+          "fairness"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f52cd17a0bcc",
+        "ordinal": 4
+      }
+    },
+    {
+      "id": "clause:public_sector_guideline_sample.md:accountability",
+      "type": "Clause",
+      "label": "accountability",
+      "properties": {
+        "text": "Every AI-assisted recommendation must identify the policy sources used, the responsible official, the decision status, and any unresolved uncertainty.",
+        "source": "public_sector_guideline_sample.md",
+        "version": "v1",
+        "domain": "public-sector-guideline-sample",
+        "citation_id": "public_sector_guideline_sample.md#accountability@v1",
+        "modality": "obligation",
+        "concepts": [],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f52cd17a0bcc",
+        "ordinal": 3
+      }
+    },
+    {
+      "id": "clause:public_sector_guideline_sample.md:data-protection",
+      "type": "Clause",
+      "label": "data-protection",
+      "properties": {
+        "text": "Personal data must be minimized, anonymized where possible, and processed only with a documented legal basis. Non-anonymized citizen images, health data, or benefits data require data protection review before external processing.",
+        "source": "public_sector_guideline_sample.md",
+        "version": "v1",
+        "domain": "public-sector-guideline-sample",
+        "citation_id": "public_sector_guideline_sample.md#data-protection@v1",
+        "modality": "obligation",
+        "concepts": [
+          "personal-data"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f52cd17a0bcc",
+        "ordinal": 1
+      }
+    },
+    {
+      "id": "clause:public_sector_guideline_sample.md:external-cloud",
+      "type": "Clause",
+      "label": "external-cloud",
+      "properties": {
+        "text": "External AI cloud services may be used only after procurement approval, security assessment, data processing agreement, and documented safeguards. Test phases are not exempt from these controls.",
+        "source": "public_sector_guideline_sample.md",
+        "version": "v1",
+        "domain": "public-sector-guideline-sample",
+        "citation_id": "public_sector_guideline_sample.md#external-cloud@v1",
+        "modality": "permission",
+        "concepts": [
+          "external-service"
+        ],
+        "relation_hint": "support",
+        "is_current": true,
+        "sha256": "f52cd17a0bcc",
+        "ordinal": 2
+      }
+    },
+    {
+      "id": "concept:access-control",
+      "type": "Concept",
+      "label": "access-control",
+      "properties": {}
+    },
+    {
+      "id": "concept:auditability",
+      "type": "Concept",
+      "label": "auditability",
+      "properties": {}
+    },
+    {
+      "id": "concept:external-service",
+      "type": "Concept",
+      "label": "external-service",
+      "properties": {}
+    },
+    {
+      "id": "concept:fairness",
+      "type": "Concept",
+      "label": "fairness",
+      "properties": {}
+    },
+    {
+      "id": "concept:high-impact",
+      "type": "Concept",
+      "label": "high-impact",
+      "properties": {}
+    },
+    {
+      "id": "concept:human-review",
+      "type": "Concept",
+      "label": "human-review",
+      "properties": {}
+    },
+    {
+      "id": "concept:personal-data",
+      "type": "Concept",
+      "label": "personal-data",
+      "properties": {}
+    },
+    {
+      "id": "concept:policy-version",
+      "type": "Concept",
+      "label": "policy-version",
+      "properties": {}
+    },
+    {
+      "id": "concept:rollback",
+      "type": "Concept",
+      "label": "rollback",
+      "properties": {}
+    },
+    {
+      "id": "concept:transparency",
+      "type": "Concept",
+      "label": "transparency",
+      "properties": {}
+    },
+    {
+      "id": "document:city_data_protection_policy.md",
+      "type": "Document",
+      "label": "City Data Protection and Privacy Policy",
+      "properties": {
+        "source": "city_data_protection_policy.md",
+        "version": "v1",
+        "domain": "data_protection_privacy",
+        "sha256": "5c5466fb23c568c8189309bf21548bf882f357941480353331337a28e31e4303"
+      }
+    },
+    {
+      "id": "document:cloud_procurement_policy.md",
+      "type": "Document",
+      "label": "Cloud Procurement and External-Service Policy",
+      "properties": {
+        "source": "cloud_procurement_policy.md",
+        "version": "v1",
+        "domain": "procurement_cloud",
+        "sha256": "bdf0c72b74ec3b7a6121770b2837e5f1edfc085fbb2cd46097d887c4d41100ff"
+      }
+    },
+    {
+      "id": "document:cybersecurity_access_control_policy.md",
+      "type": "Document",
+      "label": "Cybersecurity and Access-Control Policy",
+      "properties": {
+        "source": "cybersecurity_access_control_policy.md",
+        "version": "v1",
+        "domain": "cybersecurity_access_control",
+        "sha256": "1547e1c29e01cf261a0b89628964c45f8c04cbde96f429269aa580228e0aa80e"
+      }
+    },
+    {
+      "id": "document:eu_ai_act_sample.md",
+      "type": "Document",
+      "label": "Synthetic EU AI Act Inspired Policy Snippets",
+      "properties": {
+        "source": "eu_ai_act_sample.md",
+        "version": "v1",
+        "domain": "eu-ai-act-sample",
+        "sha256": "f29171746bfb1a553c849d14412294cf83c3e94b729323f71351b29c1491abaa"
+      }
+    },
+    {
+      "id": "document:hr_workplace_ai_policy.md",
+      "type": "Document",
+      "label": "Workplace AI and Human Resources Policy",
+      "properties": {
+        "source": "hr_workplace_ai_policy.md",
+        "version": "v1",
+        "domain": "hr_workplace_ai",
+        "sha256": "5396bcc689b28e8be028fc0df75257a92ba430459e86baaeb4bac89551c88f49"
+      }
+    },
+    {
+      "id": "document:internal_department_policy_sample.md",
+      "type": "Document",
+      "label": "Synthetic Internal Department AI Policy",
+      "properties": {
+        "source": "internal_department_policy_sample.md",
+        "version": "v1",
+        "domain": "internal-department-policy-sample",
+        "sha256": "cb6e471397d7c11c2bf80c7cdeeeda1d7b214e2b0211bcdf004d89050bd6b928"
+      }
+    },
+    {
+      "id": "document:model_governance_sample.md",
+      "type": "Document",
+      "label": "Model Governance and Auditability Policy",
+      "properties": {
+        "source": "model_governance_sample.md",
+        "version": "v1",
+        "domain": "model-governance-sample",
+        "sha256": "41180f3262e667a98cf5e14a0246f0675efc45a797d882c1f85513bf7fb3b338"
+      }
+    },
+    {
+      "id": "document:pilot_policy_v1.md",
+      "type": "Document",
+      "label": "AI Pilot Policy",
+      "properties": {
+        "source": "pilot_policy_v1.md",
+        "version": "v1",
+        "domain": "pilot-policy-v1",
+        "sha256": "5d5786af0647e14d84ad61806cb2eeb43e7b15e9761090d774b0228691c9182d"
+      }
+    },
+    {
+      "id": "document:pilot_policy_v2.md",
+      "type": "Document",
+      "label": "AI Pilot Policy",
+      "properties": {
+        "source": "pilot_policy_v2.md",
+        "version": "v2",
+        "domain": "pilot-policy-v2",
+        "sha256": "3b3126d8d530275cfc5b3ee2ed3b9c16d53dfd975ec7705193939799d33ccaf0"
+      }
+    },
+    {
+      "id": "document:public_sector_case_policy.md",
+      "type": "Document",
+      "label": "Public-Sector Service AI Case Policy",
+      "properties": {
+        "source": "public_sector_case_policy.md",
+        "version": "v1",
+        "domain": "public_sector_case_study",
+        "sha256": "e2c5d53be7edb82212730570540d7a804475fb1b17bc52c8f2db41ca1bc6a494"
+      }
+    },
+    {
+      "id": "document:public_sector_guideline_sample.md",
+      "type": "Document",
+      "label": "Synthetic Public Sector AI Guideline",
+      "properties": {
+        "source": "public_sector_guideline_sample.md",
+        "version": "v1",
+        "domain": "public-sector-guideline-sample",
+        "sha256": "f52cd17a0bcce57f7c82122e44606e802f87a46ef5d92ea87881a95f260da806"
+      }
+    },
+    {
+      "id": "version:city_data_protection_policy.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "city_data_protection_policy.md"
+      }
+    },
+    {
+      "id": "version:cloud_procurement_policy.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "cloud_procurement_policy.md"
+      }
+    },
+    {
+      "id": "version:cybersecurity_access_control_policy.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "cybersecurity_access_control_policy.md"
+      }
+    },
+    {
+      "id": "version:eu_ai_act_sample.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "eu_ai_act_sample.md"
+      }
+    },
+    {
+      "id": "version:hr_workplace_ai_policy.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "hr_workplace_ai_policy.md"
+      }
+    },
+    {
+      "id": "version:internal_department_policy_sample.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "internal_department_policy_sample.md"
+      }
+    },
+    {
+      "id": "version:model_governance_sample.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "model_governance_sample.md"
+      }
+    },
+    {
+      "id": "version:pilot_policy_v1.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "pilot_policy_v1.md"
+      }
+    },
+    {
+      "id": "version:pilot_policy_v2.md:v2",
+      "type": "Version",
+      "label": "v2",
+      "properties": {
+        "source": "pilot_policy_v2.md"
+      }
+    },
+    {
+      "id": "version:public_sector_case_policy.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "public_sector_case_policy.md"
+      }
+    },
+    {
+      "id": "version:public_sector_guideline_sample.md:v1",
+      "type": "Version",
+      "label": "v1",
+      "properties": {
+        "source": "public_sector_guideline_sample.md"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:city_data_protection_policy.md",
+      "target": "version:city_data_protection_policy.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:city_data_protection_policy.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:data-protection",
+      "target": "document:city_data_protection_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:data-protection",
+      "target": "version:city_data_protection_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:data-protection",
+      "target": "concept:external-service",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:data-protection",
+      "target": "concept:personal-data",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:data-protection",
+      "target": "concept:transparency",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:transparency",
+      "target": "document:city_data_protection_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:transparency",
+      "target": "version:city_data_protection_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:transparency",
+      "target": "concept:transparency",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:prohibited-use",
+      "target": "document:city_data_protection_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:prohibited-use",
+      "target": "version:city_data_protection_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:prohibited-use",
+      "target": "concept:access-control",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:prohibited-use",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:prohibited-use",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:cloud_procurement_policy.md",
+      "target": "version:cloud_procurement_policy.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:cloud_procurement_policy.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:external-cloud",
+      "target": "document:cloud_procurement_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:external-cloud",
+      "target": "version:cloud_procurement_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:external-cloud",
+      "target": "concept:external-service",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:external-cloud",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:accountability",
+      "target": "document:cloud_procurement_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:accountability",
+      "target": "version:cloud_procurement_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:accountability",
+      "target": "concept:external-service",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:policy-conflict",
+      "target": "document:cloud_procurement_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:policy-conflict",
+      "target": "version:cloud_procurement_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "document:cybersecurity_access_control_policy.md",
+      "target": "version:cybersecurity_access_control_policy.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:cybersecurity_access_control_policy.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:access-control",
+      "target": "document:cybersecurity_access_control_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:access-control",
+      "target": "version:cybersecurity_access_control_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:access-control",
+      "target": "concept:access-control",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:access-control",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "document:cybersecurity_access_control_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "version:cybersecurity_access_control_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "concept:policy-version",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "target": "document:cybersecurity_access_control_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "target": "version:cybersecurity_access_control_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:eu_ai_act_sample.md",
+      "target": "version:eu_ai_act_sample.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:eu_ai_act_sample.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "document:eu_ai_act_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "version:eu_ai_act_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "concept:transparency",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:prohibited-use",
+      "target": "document:eu_ai_act_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:prohibited-use",
+      "target": "version:eu_ai_act_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:prohibited-use",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:prohibited-use",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:transparency",
+      "target": "document:eu_ai_act_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:transparency",
+      "target": "version:eu_ai_act_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:transparency",
+      "target": "concept:transparency",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:human-review",
+      "target": "document:eu_ai_act_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:human-review",
+      "target": "version:eu_ai_act_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:human-review",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:human-review",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:human-review",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:hr_workplace_ai_policy.md",
+      "target": "version:hr_workplace_ai_policy.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:hr_workplace_ai_policy.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "target": "document:hr_workplace_ai_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "target": "version:hr_workplace_ai_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:human-review",
+      "target": "document:hr_workplace_ai_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:human-review",
+      "target": "version:hr_workplace_ai_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:human-review",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:human-review",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "target": "document:hr_workplace_ai_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "target": "version:hr_workplace_ai_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "target": "concept:fairness",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "target": "concept:transparency",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:internal_department_policy_sample.md",
+      "target": "version:internal_department_policy_sample.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:internal_department_policy_sample.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:audit-trail",
+      "target": "document:internal_department_policy_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:audit-trail",
+      "target": "version:internal_department_policy_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:audit-trail",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:audit-trail",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "target": "document:internal_department_policy_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "target": "version:internal_department_policy_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "target": "concept:personal-data",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:policy-conflict",
+      "target": "document:internal_department_policy_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:policy-conflict",
+      "target": "version:internal_department_policy_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "target": "document:internal_department_policy_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "target": "version:internal_department_policy_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "document:model_governance_sample.md",
+      "target": "version:model_governance_sample.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:model_governance_sample.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:model-governance",
+      "target": "document:model_governance_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:model-governance",
+      "target": "version:model_governance_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:model-governance",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:model-governance",
+      "target": "concept:policy-version",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:evidence-grounding",
+      "target": "document:model_governance_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:evidence-grounding",
+      "target": "version:model_governance_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:access-control",
+      "target": "document:model_governance_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:access-control",
+      "target": "version:model_governance_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:access-control",
+      "target": "concept:access-control",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:access-control",
+      "target": "concept:external-service",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:access-control",
+      "target": "concept:personal-data",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "document:model_governance_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "version:model_governance_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "concept:policy-version",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:pilot_policy_v1.md",
+      "target": "version:pilot_policy_v1.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:pilot_policy_v1.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-policy-v1",
+      "target": "document:pilot_policy_v1.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-policy-v1",
+      "target": "version:pilot_policy_v1.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-policy-v1",
+      "target": "concept:personal-data",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-policy-v1",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "document:pilot_policy_v1.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "version:pilot_policy_v1.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "concept:personal-data",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:pilot_policy_v2.md",
+      "target": "version:pilot_policy_v2.md:v2",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:pilot_policy_v2.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:pilot-policy-v2",
+      "target": "document:pilot_policy_v2.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:pilot-policy-v2",
+      "target": "version:pilot_policy_v2.md:v2",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:pilot-policy-v2",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:pilot-policy-v2",
+      "target": "concept:policy-version",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:pilot-policy-v2",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:policy-update",
+      "target": "document:pilot_policy_v2.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:policy-update",
+      "target": "version:pilot_policy_v2.md:v2",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:policy-update",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:policy-update",
+      "target": "concept:policy-version",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:public_sector_case_policy.md",
+      "target": "version:public_sector_case_policy.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:public_sector_case_policy.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "document:public_sector_case_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "version:public_sector_case_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "concept:auditability",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "concept:high-impact",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "concept:human-review",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:pilot-deployment",
+      "target": "document:public_sector_case_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:pilot-deployment",
+      "target": "version:public_sector_case_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:pilot-deployment",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:pilot-deployment",
+      "target": "concept:transparency",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:policy-update",
+      "target": "document:public_sector_case_policy.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:policy-update",
+      "target": "version:public_sector_case_policy.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:policy-update",
+      "target": "concept:policy-version",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:policy-update",
+      "target": "concept:rollback",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:public_sector_guideline_sample.md",
+      "target": "version:public_sector_guideline_sample.md:v1",
+      "type": "HAS_VERSION",
+      "properties": {}
+    },
+    {
+      "source": "document:public_sector_guideline_sample.md",
+      "target": "authority:enterprise-policy-owner",
+      "type": "GOVERNED_BY",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:data-protection",
+      "target": "document:public_sector_guideline_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:data-protection",
+      "target": "version:public_sector_guideline_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:data-protection",
+      "target": "concept:personal-data",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:external-cloud",
+      "target": "document:public_sector_guideline_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:external-cloud",
+      "target": "version:public_sector_guideline_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:external-cloud",
+      "target": "concept:external-service",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accountability",
+      "target": "document:public_sector_guideline_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accountability",
+      "target": "version:public_sector_guideline_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accessibility-fairness",
+      "target": "document:public_sector_guideline_sample.md",
+      "type": "DERIVED_FROM",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accessibility-fairness",
+      "target": "version:public_sector_guideline_sample.md:v1",
+      "type": "VALID_IN",
+      "properties": {}
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accessibility-fairness",
+      "target": "concept:fairness",
+      "type": "APPLIES_TO",
+      "properties": {}
+    },
+    {
+      "source": "document:pilot_policy_v2.md",
+      "target": "document:pilot_policy_v1.md",
+      "type": "OVERRIDES",
+      "properties": {
+        "reason": "newer_version"
+      }
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:data-protection",
+      "target": "clause:public_sector_guideline_sample.md:data-protection",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:data-protection",
+      "target": "clause:city_data_protection_policy.md:data-protection",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:transparency",
+      "target": "clause:eu_ai_act_sample.md:transparency",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:transparency",
+      "target": "clause:city_data_protection_policy.md:transparency",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:city_data_protection_policy.md:prohibited-use",
+      "target": "clause:eu_ai_act_sample.md:prohibited-use",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:prohibited-use",
+      "target": "clause:city_data_protection_policy.md:prohibited-use",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:external-cloud",
+      "target": "clause:public_sector_guideline_sample.md:external-cloud",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:external-cloud",
+      "target": "clause:cloud_procurement_policy.md:external-cloud",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:accountability",
+      "target": "clause:public_sector_guideline_sample.md:accountability",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accountability",
+      "target": "clause:cloud_procurement_policy.md:accountability",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cloud_procurement_policy.md:policy-conflict",
+      "target": "clause:internal_department_policy_sample.md:policy-conflict",
+      "type": "CONTRADICTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:policy-conflict",
+      "target": "clause:cloud_procurement_policy.md:policy-conflict",
+      "type": "CONTRADICTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:access-control",
+      "target": "clause:model_governance_sample.md:access-control",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:model_governance_sample.md:access-control",
+      "target": "clause:cybersecurity_access_control_policy.md:access-control",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "clause:internal_department_policy_sample.md:audit-trail",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:audit-trail",
+      "target": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "target": "clause:model_governance_sample.md:audit-trail",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "clause:cybersecurity_access_control_policy.md:audit-trail",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:audit-trail",
+      "target": "clause:model_governance_sample.md:audit-trail",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:model_governance_sample.md:audit-trail",
+      "target": "clause:internal_department_policy_sample.md:audit-trail",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "target": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "target": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "target": "clause:model_governance_sample.md:evidence-grounding",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:model_governance_sample.md:evidence-grounding",
+      "target": "clause:cybersecurity_access_control_policy.md:evidence-grounding",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "target": "clause:model_governance_sample.md:evidence-grounding",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:model_governance_sample.md:evidence-grounding",
+      "target": "clause:internal_department_policy_sample.md:evidence-grounding",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "target": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "target": "clause:public_sector_case_policy.md:high-risk-ai",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "clause:eu_ai_act_sample.md:high-risk-ai",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "target": "clause:public_sector_case_policy.md:high-risk-ai",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:high-risk-ai",
+      "target": "clause:hr_workplace_ai_policy.md:high-risk-ai",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:eu_ai_act_sample.md:human-review",
+      "target": "clause:hr_workplace_ai_policy.md:human-review",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:human-review",
+      "target": "clause:eu_ai_act_sample.md:human-review",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "target": "clause:public_sector_guideline_sample.md:accessibility-fairness",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_guideline_sample.md:accessibility-fairness",
+      "target": "clause:hr_workplace_ai_policy.md:accessibility-fairness",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "target": "clause:pilot_policy_v1.md:pilot-deployment",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "target": "clause:public_sector_case_policy.md:pilot-deployment",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:pilot-deployment",
+      "target": "clause:internal_department_policy_sample.md:pilot-deployment",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:pilot_policy_v1.md:pilot-deployment",
+      "target": "clause:public_sector_case_policy.md:pilot-deployment",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:pilot-deployment",
+      "target": "clause:pilot_policy_v1.md:pilot-deployment",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:pilot_policy_v2.md:policy-update",
+      "target": "clause:public_sector_case_policy.md:policy-update",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    },
+    {
+      "source": "clause:public_sector_case_policy.md:policy-update",
+      "target": "clause:pilot_policy_v2.md:policy-update",
+      "type": "SUPPORTS",
+      "properties": {
+        "basis": "shared_section"
+      }
+    }
+  ]
+}

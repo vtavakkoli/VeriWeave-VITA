@@ -1,0 +1,20 @@
+services:
+  claimgraph:
+    build: .
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e2b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      OLLAMA_HEALTHCHECK_SECONDS: ${OLLAMA_HEALTHCHECK_SECONDS:-2}
+      OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
+      BENCHMARK_FILE: ${BENCHMARK_FILE:-data/tasks/claimgraph_benchmark.jsonl}
+      GRAPH_EXPORT_FILE: ${GRAPH_EXPORT_FILE:-data/graph/property_graph.json}
+      MAX_TASKS: ${MAX_TASKS:-0}
+      TOP_K: ${TOP_K:-6}
+      SEED: ${SEED:-7}
+      METHODS: ${METHODS:-Direct LLM,Text RAG,Graph RAG,ClaimGraph}
+    volumes:
+      - ./data:/app/data
+      - ./result:/app/result
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
