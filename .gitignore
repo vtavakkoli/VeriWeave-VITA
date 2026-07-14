@@ -1,4 +1,14 @@
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
+.coverage
 .env
+.venv/
+build/
+dist/
+result/*
+!result/.gitkeep
+!result/challenge/
+!result/challenge/*.json
+!result/challenge/*.csv

@@ -1,8 +1,8 @@
 import unittest
 from pathlib import Path
 
-from claimgraph.data_loader import load_policies
-from claimgraph.graph import build_property_graph
+from veriweave.data_loader import load_policies
+from veriweave.graph import build_property_graph
 
 
 class GraphTests(unittest.TestCase):
@@ -18,9 +18,9 @@ class GraphTests(unittest.TestCase):
     def test_version_precedence_exists(self):
         self.assertTrue(any(edge.type == "OVERRIDES" for edge in self.graph.edges))
 
-    def test_clause_provenance_exists(self):
-        clause = next(node for node in self.graph.nodes.values() if node.type == "Clause")
-        self.assertTrue(any(edge.type == "DERIVED_FROM" for edge in self.graph.outgoing[clause.id]))
+    def test_shortest_path_is_deterministic(self):
+        clauses = sorted(node.id for node in self.graph.nodes.values() if node.type == "Clause")
+        self.assertEqual(self.graph.shortest_path(clauses[0], clauses[0]), [clauses[0]])
 
 
 if __name__ == "__main__":

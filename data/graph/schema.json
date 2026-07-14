@@ -1,10 +1,11 @@
 {
+  "project": "VeriWeave-VITA-BPA",
   "node_types": {
-    "Document": ["source", "version", "domain", "sha256"],
-    "Clause": ["text", "citation_id", "modality", "concepts", "is_current"],
+    "Document": ["source", "version", "domain", "sha256", "authority_rank"],
+    "Clause": ["text", "citation_id", "modality", "concepts", "is_current", "authority_rank"],
     "Concept": ["label"],
     "Version": ["source", "label"],
-    "Authority": ["role"]
+    "Authority": ["rank"]
   },
   "edge_types": {
     "DERIVED_FROM": "Clause -> Document",
@@ -12,7 +13,54 @@
     "APPLIES_TO": "Clause -> Concept",
     "SUPPORTS": "Clause -> Clause",
     "CONTRADICTS": "Clause -> Clause",
+    "POTENTIAL_CONFLICT": "Clause -> Clause; shared concept with opposing normative modality",
     "OVERRIDES": "Document -> Document",
     "GOVERNED_BY": "Document -> Authority"
+  },
+  "runtime_artifacts": {
+    "VerificationEnvelope": [
+      "candidate_answer",
+      "verified_answer",
+      "candidate_decision",
+      "gated_decision",
+      "validations",
+      "resolutions",
+      "accepted_citations",
+      "removed_claim_ids",
+      "review_reasons",
+      "graph_digest"
+    ],
+    "EvidenceHorizonCertificate": [
+      "initial_evidence_ids",
+      "scanned_clause_ids",
+      "blind_spots",
+      "decision_changing_blind_spots",
+      "minimal_evidence_cut",
+      "horizon_stability"
+    ],
+    "VITACertificate": [
+      "reachable_decisions",
+      "most_permissive_decision",
+      "most_restrictive_decision",
+      "decision_space_width",
+      "coalitional_blind_spots",
+      "synergistic_blind_spots",
+      "closure_converged",
+      "residual_risk_mass"
+    ],
+    "ArgumentationCertificate": [
+      "accepted_argument_ids",
+      "rejected_argument_ids",
+      "undecided_argument_ids",
+      "attack_edges",
+      "defeat_edges",
+      "conflict_free"
+    ],
+    "TemporalDriftCertificate": [
+      "snapshots",
+      "drift_events",
+      "stable_across_versions",
+      "retroactive_review_required"
+    ]
   }
 }

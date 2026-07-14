@@ -1,5 +1,5 @@
 services:
-  claimgraph:
+  veriweave:
     build: .
     environment:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
@@ -7,12 +7,23 @@ services:
       OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
       OLLAMA_HEALTHCHECK_SECONDS: ${OLLAMA_HEALTHCHECK_SECONDS:-2}
       OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
-      BENCHMARK_FILE: ${BENCHMARK_FILE:-data/tasks/claimgraph_benchmark.jsonl}
-      GRAPH_EXPORT_FILE: ${GRAPH_EXPORT_FILE:-data/graph/property_graph.json}
+      BENCHMARK_FILE: ${BENCHMARK_FILE:-data/tasks/veriweave_benchmark.jsonl}
+      GRAPH_EXPORT_FILE: ${GRAPH_EXPORT_FILE:-data/graph/evidence_graph.json}
       MAX_TASKS: ${MAX_TASKS:-0}
       TOP_K: ${TOP_K:-6}
+      VITA_MAX_CANDIDATES: ${VITA_MAX_CANDIDATES:-8}
+      VITA_MAX_COALITION_SIZE: ${VITA_MAX_COALITION_SIZE:-2}
+      VITA_MAX_ROUNDS: ${VITA_MAX_ROUNDS:-3}
+      VITA_MAX_EXPAND_PER_ROUND: ${VITA_MAX_EXPAND_PER_ROUND:-4}
+      BOLTZMANN_MAX_CANDIDATES: ${BOLTZMANN_MAX_CANDIDATES:-12}
+      BOLTZMANN_TEMPERATURE: ${BOLTZMANN_TEMPERATURE:-0.75}
+      BOLTZMANN_MIN_TEMPERATURE: ${BOLTZMANN_MIN_TEMPERATURE:-0.20}
+      BOLTZMANN_MAX_TEMPERATURE: ${BOLTZMANN_MAX_TEMPERATURE:-1.50}
+      BOLTZMANN_ATTENTION_MASS: ${BOLTZMANN_ATTENTION_MASS:-0.90}
+      BOLTZMANN_ANNEAL_RATE: ${BOLTZMANN_ANNEAL_RATE:-0.82}
+      BOLTZMANN_SIZE_PENALTY: ${BOLTZMANN_SIZE_PENALTY:-0.08}
       SEED: ${SEED:-7}
-      METHODS: ${METHODS:-Direct LLM,Text RAG,Graph RAG,ClaimGraph}
+      METHODS: ${METHODS:-Direct LLM,Text RAG,Community GraphRAG,PPR GraphRAG,Steiner GraphRAG,VeriWeave-Core,VeriWeave-Horizon,VeriWeave-VITA,VeriWeave-VITA-BPA}
     volumes:
       - ./data:/app/data
       - ./result:/app/result

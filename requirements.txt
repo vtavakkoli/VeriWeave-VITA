@@ -1,2 +1,2 @@
-# ClaimGraph intentionally uses only the Python standard library.
-# This keeps the benchmark reproducible and makes Ollama the only optional service.
+# VeriWeave uses only the Python standard library at runtime.
+# Install the local package with: pip install -e .
