@@ -108,16 +108,23 @@ class CommunityGraphRetriever:
                 score += 0.8
             concept_scores[node.id] = score
 
-        clause_scores: dict[str, float] = defaultdict(float)
+        # Use a plain dictionary rather than defaultdict. Reading a missing
+        # key from defaultdict(float) creates a zero-scored entry even when
+        # the candidate is not selected. Such an entry has no graph path and
+        # previously caused a KeyError during ranking for zero-overlap queries.
+        clause_scores: dict[str, float] = {}
         paths: dict[str, list[str]] = {}
         for concept_id, concept_score in concept_scores.items():
             for edge in self.graph.incoming.get(concept_id, []):
                 if edge.type != "APPLIES_TO":
                     continue
-                clause = self.graph.nodes[edge.source]
+                clause = self.graph.nodes.get(edge.source)
+                if clause is None or clause.type != "Clause":
+                    continue
                 lexical = token_similarity(query, f"{clause.label} {clause.properties.get('text', '')}")
                 score = 0.6 * concept_score + 0.4 * lexical
-                if score > clause_scores[clause.id]:
+                previous = clause_scores.get(clause.id)
+                if previous is None or score > previous:
                     clause_scores[clause.id] = score
                     paths[clause.id] = [concept_id, clause.id]
 
@@ -127,10 +134,14 @@ class CommunityGraphRetriever:
                 paths[clause.id] = [clause.id]
 
         ranked = sorted(clause_scores.items(), key=lambda item: (item[1], item[0]), reverse=True)[:top_k]
-        return [
-            evidence_from_node(self.graph.nodes[clause_id], score, paths[clause_id], role="community", retriever=self.name)
-            for clause_id, score in ranked
-        ]
+        output: list[Evidence] = []
+        for clause_id, score in ranked:
+            node = self.graph.nodes.get(clause_id)
+            if node is None or node.type != "Clause":
+                continue
+            path = paths.get(clause_id, [clause_id])
+            output.append(evidence_from_node(node, score, path, role="community", retriever=self.name))
+        return output
 
 
 class PPRGraphRetriever:

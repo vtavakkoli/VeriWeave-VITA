@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "veriweave-vita-bpa"
-version = "4.1.0"
+version = "4.1.1"
 description = "Verification-impact, temporal and argumentation reasoning with Boltzmann Policy Attention for auditable LLM policy decisions"
 readme = "README.md"
 requires-python = ">=3.11"

@@ -33,6 +33,14 @@ class RetrievalTests(unittest.TestCase):
         evidence = TextRetriever(self.graph).retrieve("human review for an adverse decision", 3)
         self.assertTrue(any("review" in item.text.lower() for item in evidence))
 
+    def test_community_retrieval_handles_zero_overlap_candidates(self):
+        # Regression for T015: zero-scored concept candidates used to be
+        # inserted by defaultdict without a corresponding graph path.
+        query = "What accountability information should an AI-assisted recommendation identify?"
+        evidence = CommunityGraphRetriever(self.graph).retrieve(query, 10)
+        self.assertTrue(evidence)
+        self.assertTrue(all(item.graph_path for item in evidence))
+
     def test_veriweave_retrieves_multiple_evidence_roles(self):
         evidence = VeriWeaveRetriever(self.graph).retrieve("current rule when policy versions conflict", 6)
         roles = {item.role for item in evidence}
