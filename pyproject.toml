@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "veriweave-vita-bpa"
+version = "4.1.0"
+description = "Verification-impact, temporal and argumentation reasoning with Boltzmann Policy Attention for auditable LLM policy decisions"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+authors = [{name = "Vahid Tavakkoli"}]
+keywords = ["graph-rag", "knowledge-graph", "llm", "counterfactual", "coalitional", "argumentation", "temporal-drift", "verification", "policy", "boltzmann", "energy-based-attention"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = []
+
+[project.scripts]
+veriweave = "veriweave.cli:main"
+veriweave-horizon-challenge = "veriweave.horizon_challenge:main"
+veriweave-vita-challenge = "veriweave.vita_challenge:main"
+veriweave-boltzmann-challenge = "veriweave.boltzmann_challenge:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
