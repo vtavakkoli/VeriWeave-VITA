@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use VeriWeave-VITA-BPA, please cite the software and accompanying paper."
+title: "VeriWeave-VITA-BPA: Verification-Impact, Temporal and Argumentation Reasoning with Boltzmann Policy Attention"
+version: 4.1.0
+date-released: 2026-07-14
+authors:
+  - family-names: Tavakkoli
+    given-names: Vahid
+repository-code: "https://github.com/vtavakkoli/VeriWeave-VITA-BPA"
+license: Apache-2.0
