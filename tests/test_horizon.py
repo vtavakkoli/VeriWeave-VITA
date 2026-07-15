@@ -79,7 +79,7 @@ class EvidenceHorizonTests(unittest.TestCase):
         self.assertIn("new.md#prohibition@v2", {item.citation_id for item in expanded})
         self.assertTrue(certificate.requires_review)
 
-    def test_horizon_certificate_contains_fragility_record(self):
+    def test_cut_is_not_claimed_when_no_supported_decisive_claim_remains(self):
         certificate, _, _, _ = analyze_evidence_horizon(
             "Can the AI system decide without human review?",
             self.claims,
@@ -87,8 +87,8 @@ class EvidenceHorizonTests(unittest.TestCase):
             self.graph,
             "allowed",
         )
-        self.assertIsNotNone(certificate.minimal_evidence_cut)
-        self.assertEqual(certificate.minimal_evidence_cut["cut_size"], 1)
+        self.assertIsNone(certificate.minimal_evidence_cut)
+        self.assertEqual(certificate.evidence_cut_robustness, 0.0)
 
 
 if __name__ == "__main__":
