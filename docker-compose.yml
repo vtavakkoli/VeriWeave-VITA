@@ -3,10 +3,18 @@ services:
     build: .
     environment:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e2b}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:30b-a3b}
       OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+      OLLAMA_TEMPERATURE: ${OLLAMA_TEMPERATURE:-0.7}
+      OLLAMA_TOP_P: ${OLLAMA_TOP_P:-0.8}
+      OLLAMA_TOP_K: ${OLLAMA_TOP_K:-20}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
+      QWEN_NO_THINK: ${QWEN_NO_THINK:-true}
       OLLAMA_HEALTHCHECK_SECONDS: ${OLLAMA_HEALTHCHECK_SECONDS:-2}
       OLLAMA_ENABLED: ${OLLAMA_ENABLED:-true}
+      OLLAMA_MAX_RETRIES: ${OLLAMA_MAX_RETRIES:-3}
+      OLLAMA_RETRY_BACKOFF_SECONDS: ${OLLAMA_RETRY_BACKOFF_SECONDS:-1.0}
+      STRICT_MODEL_RUN: ${STRICT_MODEL_RUN:-true}
       BENCHMARK_FILE: ${BENCHMARK_FILE:-data/tasks/veriweave_benchmark.jsonl}
       GRAPH_EXPORT_FILE: ${GRAPH_EXPORT_FILE:-data/graph/evidence_graph.json}
       MAX_TASKS: ${MAX_TASKS:-0}
@@ -23,7 +31,7 @@ services:
       BOLTZMANN_ANNEAL_RATE: ${BOLTZMANN_ANNEAL_RATE:-0.82}
       BOLTZMANN_SIZE_PENALTY: ${BOLTZMANN_SIZE_PENALTY:-0.08}
       SEED: ${SEED:-7}
-      METHODS: ${METHODS:-Direct LLM,Text RAG,Community GraphRAG,PPR GraphRAG,Steiner GraphRAG,VeriWeave-Core,VeriWeave-Horizon,VeriWeave-VITA,VeriWeave-VITA-BPA}
+      METHODS: ${METHODS:-Direct LLM,Text RAG,Community GraphRAG,PPR GraphRAG,Steiner GraphRAG,VeriWeave-Core,VeriWeave-Horizon,VeriWeave-VITA,VeriWeave-VITA-BPA,VeriWeave-VITA-PRO}
     volumes:
       - ./data:/app/data
       - ./result:/app/result
