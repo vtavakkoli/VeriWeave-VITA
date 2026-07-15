@@ -23,7 +23,7 @@ def attach_independent_audit(trace: dict, graph: PropertyGraph, retriever: Audit
         str(trace.get("decision", "unknown")),
         max_candidates=10,
         max_expand=3,
-        max_cut_size=2,
+        max_cut_size=3,
     )
     vita, _, _, _, argumentation, temporal, boltzmann_attention = analyze_vita_decision_space(
         str(trace.get("question", "")),

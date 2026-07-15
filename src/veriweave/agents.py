@@ -90,17 +90,23 @@ def _prompt(task: BenchmarkTask, evidence: list[Evidence], method: str) -> str:
         f"[{item.citation_id}] role={item.role}; version={item.version}; current={item.is_current}; modality={item.modality}; text={item.text}"
         for item in evidence
     )
-    method_guidance = {
-        "Direct LLM": "Answer without external evidence. Mark unknown or needs_review when uncertain.",
-        "Text RAG": "Use only the retrieved text passages.",
-        "Community GraphRAG": "Use the concept-community evidence and its graph paths.",
-        "PPR GraphRAG": "Use the associatively ranked graph evidence.",
-        "Steiner GraphRAG": "Use the connected-subgraph evidence.",
-        "VeriWeave-Core": "Use support and counterevidence, respect current versions and precedence, and avoid claims that cannot be cited.",
-        "VeriWeave-Horizon": "Use support and counterevidence, respect precedence, and let the verifier search beyond the retrieved subgraph for decision-changing blind spots.",
-        "VeriWeave-VITA": "Use support and counterevidence, respect precedence, and let the verifier test interacting omitted clauses, argumentation attacks, and policy-version drift.",
-        "VeriWeave-VITA-BPA": "Use support and counterevidence, respect precedence, and let annealed Boltzmann Policy Attention allocate the omitted-evidence budget across interacting policy-clause coalitions before VITA verification.",
-    }[method]
+    if method.startswith("VeriWeave-"):
+        method_guidance = (
+            "Use support and counterevidence, respect current versions and precedence, "
+            "write one atomic sentence per claim, and cite every sentence with at least "
+            "one evidence identifier. Mark needs_review only when the supplied evidence "
+            "is genuinely insufficient or conflicting."
+        )
+        generation_profile = "VeriWeave"
+    else:
+        method_guidance = {
+            "Direct LLM": "Answer without external evidence. Mark unknown or needs_review when uncertain.",
+            "Text RAG": "Use only the retrieved text passages.",
+            "Community GraphRAG": "Use the concept-community evidence and its graph paths.",
+            "PPR GraphRAG": "Use the associatively ranked graph evidence.",
+            "Steiner GraphRAG": "Use the connected-subgraph evidence.",
+        }[method]
+        generation_profile = method
     return f"""You are participating in a controlled policy question-answering benchmark.
 {method_guidance}
 Return exactly one JSON object with these keys:
@@ -110,7 +116,7 @@ Return exactly one JSON object with these keys:
 - human_review_required: boolean
 Do not copy a decision from retrieved evidence unless it answers the question. Do not invent citations.
 
-Method: {method}
+Generation profile: {generation_profile}
 Question: {task.question}
 Evidence:
 {evidence_block or '[none]'}
@@ -139,6 +145,7 @@ def _retriever_for(
         "VeriWeave-Horizon": veriweave_retriever,
         "VeriWeave-VITA": veriweave_retriever,
         "VeriWeave-VITA-BPA": veriweave_retriever,
+        "VeriWeave-VITA-PRO": veriweave_retriever,
     }.get(method)
 
 
@@ -168,16 +175,19 @@ def run_method(
     claims: list[dict[str, Any]] = []
     validations: list[dict[str, Any]] = []
     resolutions: list[dict[str, Any]] = []
+    output_evidence = [item.to_dict() for item in evidence]
 
-    if method in {"VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA"}:
+    if method in {"VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"}:
         envelope = build_verification_envelope(
             candidate,
             evidence,
             graph,
             question=task.question,
             enable_horizon=method == "VeriWeave-Horizon",
-            enable_vita=method in {"VeriWeave-VITA", "VeriWeave-VITA-BPA"},
+            enable_vita=method in {"VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"},
             enable_boltzmann_attention=method == "VeriWeave-VITA-BPA",
+            enable_provenance_robust_selection=method == "VeriWeave-VITA-PRO",
+            repair_verified_citations=method == "VeriWeave-VITA-PRO",
             vita_options=vita_options,
         )
         answer = envelope.verified_answer
@@ -187,10 +197,14 @@ def run_method(
         claims = envelope.claims
         validations = envelope.validations
         resolutions = envelope.resolutions
+        output_evidence = envelope.effective_evidence
 
+    subgraph_clause_ids = [
+        str(item.get("clause_id", "")) for item in output_evidence[: max(3, top_k)] if item.get("clause_id")
+    ]
     subgraph = (
-        graph.explanation_subgraph([item.clause_id for item in evidence[: max(3, top_k)]], include_claims=claims)
-        if method in {"Community GraphRAG", "PPR GraphRAG", "Steiner GraphRAG", "VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA"}
+        graph.explanation_subgraph(subgraph_clause_ids, include_claims=claims)
+        if method in {"Community GraphRAG", "PPR GraphRAG", "Steiner GraphRAG", "VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"}
         else {"nodes": [], "edges": []}
     )
 
@@ -208,7 +222,8 @@ def run_method(
         "method_validations": validations,
         "method_resolutions": resolutions,
         "citations": citations,
-        "evidence": [item.to_dict() for item in evidence],
+        "initial_evidence": [item.to_dict() for item in evidence],
+        "evidence": output_evidence,
         "claim_evidence_subgraph": subgraph,
         "verification_envelope": envelope.to_dict() if envelope else None,
         "evidence_horizon_certificate": envelope.evidence_horizon if envelope else None,
@@ -216,5 +231,8 @@ def run_method(
         "argumentation_certificate": envelope.argumentation_certificate if envelope else None,
         "temporal_drift_certificate": envelope.temporal_drift_certificate if envelope else None,
         "boltzmann_policy_attention_certificate": envelope.boltzmann_policy_attention if envelope else None,
+        "provenance_robust_selection_certificate": (
+            (envelope.vita_certificate or {}).get("selection_certificate") if envelope else None
+        ),
         "latency_seconds": round(time.perf_counter() - started, 6),
     }

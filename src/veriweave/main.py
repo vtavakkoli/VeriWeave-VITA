@@ -77,19 +77,35 @@ def main() -> None:
         trace_path,
         cfg.ollama_enabled,
         cfg.healthcheck_seconds,
+        cfg.ollama_max_retries,
+        cfg.ollama_retry_backoff_seconds,
+        cfg.strict_model_run,
+        cfg.ollama_temperature,
+        cfg.ollama_top_p,
+        cfg.ollama_top_k,
+        cfg.ollama_num_ctx,
+        cfg.qwen_no_think,
     )
 
     manifest = {
         "timestamp": now(),
         "run_id": stable_hash(now() + cfg.ollama_model + str(cfg.seed)),
-        "system": "VeriWeave-VITA-BPA",
-        "version": "4.0.0",
+        "system": "VeriWeave-VITA-PRO",
+        "version": "4.2.0",
         "platform": platform.platform(),
         "python": platform.python_version(),
         "model": cfg.ollama_model,
         "seed": cfg.seed,
         "ollama_enabled": cfg.ollama_enabled,
         "ollama_available": client.is_available(),
+        "generation": {
+            "temperature": cfg.ollama_temperature,
+            "top_p": cfg.ollama_top_p,
+            "top_k": cfg.ollama_top_k,
+            "num_ctx": cfg.ollama_num_ctx,
+            "qwen_no_think": cfg.qwen_no_think,
+            "structured_json_schema": True,
+        },
         "benchmark": str(benchmark_path),
         "tasks_evaluated": len(tasks),
         "task_type_distribution": dict(Counter(task.task_type for task in tasks)),
@@ -102,6 +118,7 @@ def main() -> None:
             "VeriWeave-Horizon": "VeriWeave-Core plus singleton counterfactual evidence-horizon search, decision-impact testing, and minimal-evidence-cut certification",
             "VeriWeave-VITA": "VeriWeave-Horizon plus coalitional omitted-evidence closure, a two-sided decision space, grounded argumentation, and temporal decision-drift certification",
             "VeriWeave-VITA-BPA": "VeriWeave-VITA plus inference-time Boltzmann Policy Attention over policy-clause coalitions, adaptive temperature, pairwise interaction couplings, and free-energy residual certification",
+            "VeriWeave-VITA-PRO": "VeriWeave-VITA plus deterministic provenance-robust optimization, independent-source support, diversity-aware evidence selection, and grounded citation composition",
         },
         "vita_budget": {
             "max_candidates": cfg.vita_max_candidates,
@@ -131,6 +148,9 @@ def main() -> None:
             "argumentation_certificate": True,
             "temporal_drift_certificate": True,
             "common_boltzmann_policy_attention_audit": True,
+            "claim_level_citation_coverage": True,
+            "evidence_cut_requires_supported_claims": True,
+            "strict_model_run": cfg.strict_model_run,
         },
         "graph": {"nodes": len(graph.nodes), "edges": len(graph.edges), "export": str(graph_path)},
         "note": "Offline fallback outputs verify software only and must not be reported as LLM experimental findings.",
@@ -182,11 +202,28 @@ def main() -> None:
             except Exception as exc:
                 logger.exception("Failure task=%s method=%s", task.id, method)
                 failures.append({"task_id": task.id, "method": method, "error": str(exc)})
+                if cfg.strict_model_run and "Ollama" in str(exc):
+                    (cfg.result_dir / "failures.json").write_text(
+                        json.dumps(failures, indent=2, ensure_ascii=False), encoding="utf-8"
+                    )
+                    raise
 
     _write_csv(cfg.result_dir / "metrics.csv", rows)
     (cfg.result_dir / "metrics.json").write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
     (cfg.result_dir / "failures.json").write_text(json.dumps(failures, indent=2, ensure_ascii=False), encoding="utf-8")
-    statistics = write_statistics(cfg.result_dir, rows, target="VeriWeave-VITA-BPA", seed=cfg.seed)
+    manifest["model_call_stats"] = dict(client.call_stats)
+    expected_calls = len(tasks) * len(methods)
+    manifest["expected_model_calls"] = expected_calls
+    manifest["valid_for_paper"] = (
+        not failures
+        and cfg.ollama_enabled
+        and client.call_stats["successful"] == expected_calls
+        and client.call_stats["fallback"] == 0
+    )
+    (cfg.result_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    statistics = write_statistics(cfg.result_dir, rows, target="VeriWeave-VITA-PRO", seed=cfg.seed)
     generate_report(cfg.result_dir, rows, traces, manifest, statistics)
     logger.info("Report written to %s", cfg.result_dir / "report.html")
 
