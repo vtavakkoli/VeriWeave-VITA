@@ -1,0 +1,23 @@
+services:
+  govern:
+    build: .
+    image: veriweave-govern:0.1.0
+    ports:
+      - "8080:8080"
+    environment:
+      GOVERN_AUDIT_PATH: /app/data/audit.jsonl
+      GOVERN_AUDIT_SIGNING_KEY: ${GOVERN_AUDIT_SIGNING_KEY:-development-only-change-me}
+    volumes:
+      - govern-data:/app/data
+      - ./config/policies:/app/config/policies:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+volumes:
+  govern-data:

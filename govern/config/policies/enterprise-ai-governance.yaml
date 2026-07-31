@@ -1,0 +1,69 @@
+id: enterprise-ai-governance
+name: Enterprise AI Governance Baseline
+version: 1.0.0
+status: active
+owner: AI Governance Office
+effective_from: 2026-08-01
+tags:
+  - agentic-ai
+  - human-oversight
+  - regulated-workflows
+rules:
+  - id: prohibit-secret-exfiltration
+    description: Prevent agents from exporting confidential or secret information.
+    when:
+      - field: action
+        operator: in
+        value: [send_external, publish_external, upload_external]
+      - field: context.data_classification
+        operator: in
+        value: [confidential, secret, restricted]
+    decision: deny
+    review_queue: security-incident
+    reason: External transfer of protected information is prohibited.
+
+  - id: high-impact-human-review
+    description: High-impact decisions require accountable human approval.
+    when:
+      - field: context.impact
+        operator: in
+        value: [high, critical]
+    decision: review
+    required_evidence:
+      - business_justification
+      - risk_assessment
+    min_evidence_score: 0.65
+    review_queue: ai-governance-board
+    reason: High-impact AI actions require documented evidence and human oversight.
+
+  - id: allow-low-risk-read
+    description: Permit low-risk read-only actions when policy evidence is present.
+    when:
+      - field: action
+        operator: in
+        value: [read, search, summarize]
+      - field: context.impact
+        operator: in
+        value: [low, minimal]
+    decision: allow
+    required_evidence:
+      - policy_reference
+    min_evidence_score: 0.55
+    reason: Low-risk read-only action is permitted by the active governance baseline.
+
+  - id: production-agent-change
+    description: Production-changing agent actions require change and rollback evidence.
+    when:
+      - field: context.environment
+        operator: eq
+        value: production
+      - field: action
+        operator: in
+        value: [deploy, configure, delete, execute, approve]
+    decision: review
+    required_evidence:
+      - change_ticket
+      - rollback_plan
+    min_evidence_score: 0.60
+    review_queue: production-change
+    reason: Production-changing actions require approved change evidence and rollback planning.
