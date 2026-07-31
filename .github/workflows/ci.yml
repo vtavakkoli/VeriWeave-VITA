@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "agent/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Compile source
+        run: python -m compileall -q src
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Run offline smoke test
+        env:
+          OLLAMA_ENABLED: "false"
+          STRICT_MODEL_RUN: "false"
+          MAX_TASKS: "2"
+          METHODS: "VeriWeave-Core,VeriWeave-VITA-PRO"
+        run: python -m veriweave.main
+
+  container:
+    name: Container build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --tag veriweave-vita-pro:ci .
