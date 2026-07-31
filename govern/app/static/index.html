@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VeriWeave Govern</title>
+  <style>
+    :root { color-scheme: dark; --bg:#08111f; --panel:#101c2f; --muted:#91a4bd; --line:#24344b; --accent:#6ee7c5; --danger:#ff7d8d; --review:#ffd166; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:Inter,ui-sans-serif,system-ui,sans-serif; background:radial-gradient(circle at top right,#173154 0,#08111f 42%); color:#eef6ff; min-height:100vh; }
+    header,main { width:min(1180px,92vw); margin:auto; }
+    header { padding:42px 0 24px; display:flex; justify-content:space-between; align-items:end; gap:24px; }
+    h1 { font-size:clamp(2rem,5vw,4.6rem); letter-spacing:-.06em; margin:0; line-height:.95; }
+    h1 span { color:var(--accent); }
+    .tagline { color:var(--muted); max-width:580px; line-height:1.6; margin:14px 0 0; }
+    .status { border:1px solid var(--line); background:#0c1728cc; padding:10px 14px; border-radius:999px; color:var(--accent); white-space:nowrap; }
+    main { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr); gap:22px; padding-bottom:48px; }
+    .panel { background:linear-gradient(180deg,#122139e8,#0d1829e8); border:1px solid var(--line); border-radius:22px; padding:22px; box-shadow:0 20px 60px #0005; }
+    h2 { margin:0 0 18px; font-size:1.05rem; letter-spacing:.02em; }
+    label { display:block; color:var(--muted); font-size:.82rem; margin:14px 0 7px; }
+    input,select,textarea { width:100%; background:#081220; color:#f5f9ff; border:1px solid var(--line); border-radius:11px; padding:12px; font:inherit; }
+    textarea { min-height:94px; resize:vertical; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    button { width:100%; margin-top:18px; padding:13px 16px; border:0; border-radius:12px; background:var(--accent); color:#062117; font-weight:800; cursor:pointer; }
+    button:hover { filter:brightness(1.08); }
+    .decision { font-size:2.5rem; font-weight:900; letter-spacing:-.04em; margin:8px 0 4px; text-transform:uppercase; }
+    .allow { color:var(--accent); } .review { color:var(--review); } .deny { color:var(--danger); }
+    .meta,.reason,.policy { border-top:1px solid var(--line); padding:13px 0; }
+    .meta { display:grid; grid-template-columns:1fr 1fr; gap:12px; color:var(--muted); font-size:.8rem; }
+    code { word-break:break-all; color:#bed2ea; }
+    ul { padding-left:19px; color:#cbd9e9; line-height:1.5; }
+    .policy strong { color:#fff; }
+    .empty { color:var(--muted); padding:28px 0; text-align:center; }
+    footer { width:min(1180px,92vw); margin:0 auto 30px; color:var(--muted); font-size:.8rem; }
+    @media (max-width:850px) { header { align-items:start; flex-direction:column; } main { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<header>
+  <div><h1>VeriWeave <span>Govern</span></h1><p class="tagline">A policy enforcement and evidence governance control plane for enterprise AI agents. Decisions are explainable, review-routed and tamper-evident.</p></div>
+  <div class="status" id="health">● Connecting</div>
+</header>
+<main>
+  <section class="panel">
+    <h2>Evaluate an agent action</h2>
+    <div class="row">
+      <div><label>Agent ID</label><input id="agent" value="procurement-agent" /></div>
+      <div><label>Action</label><select id="action"><option>summarize</option><option>deploy</option><option>send_external</option><option>approve</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>Impact</label><select id="impact"><option>low</option><option>high</option><option>critical</option></select></div>
+      <div><label>Environment</label><select id="environment"><option>test</option><option>production</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>Data classification</label><select id="classification"><option>public</option><option>internal</option><option>confidential</option><option>secret</option></select></div>
+      <div><label>Evidence type</label><select id="evidenceType"><option>policy_reference</option><option>business_justification</option><option>risk_assessment</option><option>change_ticket</option><option>rollback_plan</option></select></div>
+    </div>
+    <label>Evidence text</label>
+    <textarea id="evidence">Policy section 4 requires documented approval and accountable human oversight for this action.</textarea>
+    <button id="evaluate">Evaluate governance decision</button>
+  </section>
+  <aside class="panel" id="result"><div class="empty">Submit an action to see the governed decision, evidence score and audit hash.</div></aside>
+</main>
+<footer>VeriWeave Govern · local-first enterprise governance runtime · API documentation at <code>/docs</code></footer>
+<script>
+const $ = id => document.getElementById(id);
+async function health(){try{const r=await fetch('/health');const d=await r.json();$('health').textContent=`● ${d.active_policies} active policies`;}catch{$('health').textContent='● Offline';}}
+$('evaluate').onclick=async()=>{
+  $('result').innerHTML='<div class="empty">Evaluating policy and evidence…</div>';
+  const body={agent_id:$('agent').value,action:$('action').value,context:{impact:$('impact').value,environment:$('environment').value,data_classification:$('classification').value},evidence:[{evidence_id:'dashboard-evidence',source_id:'policy-library',source_version:'2026.1',evidence_type:$('evidenceType').value,content:$('evidence').value,authority:90,current:true,signed:true}]};
+  try{const r=await fetch('/v1/evaluate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(JSON.stringify(d));const ev=d.evidence_assessments[0];$('result').innerHTML=`<h2>Governance result</h2><div class="decision ${d.decision}">${d.decision}</div><div class="meta"><div>Evidence score<br><strong>${ev?ev.score:'—'}</strong></div><div>Review queue<br><strong>${d.review_queue||'none'}</strong></div></div><div class="reason"><strong>Reasons</strong><ul>${d.reasons.map(x=>`<li>${x}</li>`).join('')}</ul></div><div class="policy"><strong>Matched rules</strong><ul>${d.matched_rules.map(x=>`<li>${x.policy_id}@${x.policy_version} / ${x.rule_id}</li>`).join('')||'<li>Fail-safe default</li>'}</ul></div><div class="policy"><strong>Audit record</strong><br><code>${d.audit.record_hash}</code></div><div class="policy"><strong>Policy set</strong><br><code>${d.policy_set_hash}</code></div>`;}catch(e){$('result').innerHTML=`<div class="decision deny">ERROR</div><p>${e.message}</p>`;}
+};
+health();
+</script>
+</body>
+</html>
