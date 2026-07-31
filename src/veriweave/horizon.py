@@ -239,37 +239,68 @@ def _minimal_evidence_cut(
     candidate_decision: str,
     baseline_validations: list[ClaimValidation],
     baseline_resolutions: list[ResolutionRecord],
-    max_cut_size: int = 2,
+    max_cut_size: int = 3,
 ) -> EvidenceCutRecord | None:
+    """Find the smallest *independent source-group* removal that breaks support.
+
+    Clauses from the same source/version are treated as one correlated evidence
+    group.  The cut focuses on supported decisive claims when available, and on
+    all supported claims otherwise.  This avoids declaring an answer fragile
+    merely because a non-decisive explanatory sentence has one citation.
+    """
     baseline_statuses = _status_map(baseline_validations)
     baseline_decision = _gated_decision(candidate_decision, claims, baseline_validations, baseline_resolutions)
     decisive_ids = {claim.id for claim in claims if claim.decisive}
+    supported_ids = {
+        validation.claim_id for validation in baseline_validations if validation.status == "supported"
+    }
+    target_ids = (decisive_ids & supported_ids) or supported_ids
+    if not target_ids:
+        return None
+
     support_ids = {
         citation
         for validation in baseline_validations
-        if validation.status == "supported"
-        for citation in validation.winning_evidence_ids or validation.evidence_ids
+        if validation.claim_id in target_ids and validation.status == "supported"
+        for citation in (validation.winning_evidence_ids or validation.evidence_ids)
     }
-    removable = [item for item in evidence if item.citation_id in support_ids]
-    if not removable:
-        removable = list(evidence)
+    relevant = [item for item in evidence if item.citation_id in support_ids]
+    if not relevant:
+        return None
 
-    for cut_size in range(1, min(max_cut_size, len(removable)) + 1):
-        for subset in combinations(removable, cut_size):
-            removed_ids = {item.clause_id for item in subset}
-            remaining = [item for item in evidence if item.clause_id not in removed_ids]
+    groups: dict[str, list[Evidence]] = {}
+    for item in relevant:
+        # Source is the independence unit. Version remains in the key only when
+        # source metadata is absent, so multiple versions from one policy do not
+        # masquerade as independent corroboration.
+        key = item.source or f"{item.citation_id}@{item.version}"
+        groups.setdefault(key, []).append(item)
+
+    group_items = list(groups.items())
+    for cut_size in range(1, min(max_cut_size, len(group_items)) + 1):
+        for subset in combinations(group_items, cut_size):
+            removed_clause_ids = {
+                item.clause_id
+                for _group, items in subset
+                for item in items
+            }
+            remaining = [item for item in evidence if item.clause_id not in removed_clause_ids]
             resolutions = resolve_precedence(remaining, graph)
             validations = validate_claims(claims, remaining, graph, resolutions)
             statuses = _status_map(validations)
             decision_after = _gated_decision(candidate_decision, claims, validations, resolutions)
             changed = sorted(
                 claim_id
-                for claim_id, status in statuses.items()
-                if baseline_statuses.get(claim_id) == "supported" and status != "supported"
+                for claim_id in target_ids
+                if baseline_statuses.get(claim_id) == "supported"
+                and statuses.get(claim_id) != "supported"
             )
-            decisive_changed = bool(decisive_ids & set(changed))
-            if decision_after != baseline_decision or decisive_changed or changed:
-                citations = sorted(item.citation_id for item in subset)
+            if decision_after != baseline_decision or changed:
+                citations = sorted(
+                    item.citation_id
+                    for _group, items in subset
+                    for item in items
+                )
                 return EvidenceCutRecord(
                     removed_citation_ids=citations,
                     changed_claim_ids=changed,
@@ -277,8 +308,8 @@ def _minimal_evidence_cut(
                     decision_after=decision_after,
                     cut_size=cut_size,
                     explanation=(
-                        f"Removing {cut_size} evidence item(s) changes the decision or invalidates supported claims; "
-                        "the answer is evidence-fragile at this cut size."
+                        f"Removing {cut_size} independent source group(s) changes the decision "
+                        "or invalidates a supported decision-bearing claim."
                     ),
                 )
     return None
@@ -293,7 +324,7 @@ def analyze_evidence_horizon(
     *,
     max_candidates: int = 12,
     max_expand: int = 4,
-    max_cut_size: int = 2,
+    max_cut_size: int = 3,
 ) -> tuple[EvidenceHorizonCertificate, list[Evidence], list[ResolutionRecord], list[ClaimValidation]]:
     """Discover unseen evidence, test decision impact, and certify fragility."""
     candidates = _horizon_candidates(question, claims, evidence, graph, max_candidates)
@@ -326,12 +357,34 @@ def analyze_evidence_horizon(
         max_cut_size=max_cut_size,
     )
 
-    if cut is None:
-        cut_robustness = 1.0
-    elif cut.cut_size <= 1:
+    decisive_ids = {claim.id for claim in claims if claim.decisive}
+    supported_ids = {
+        validation.claim_id for validation in expanded_validations if validation.status == "supported"
+    }
+    target_ids = (decisive_ids & supported_ids) or supported_ids
+    support_citations = {
+        citation
+        for validation in expanded_validations
+        if validation.claim_id in target_ids
+        for citation in (validation.winning_evidence_ids or validation.evidence_ids)
+    }
+    support_sources = {
+        item.source or f"{item.citation_id}@{item.version}"
+        for item in expanded
+        if item.citation_id in support_citations
+    }
+    cut_assessable = bool(target_ids and support_sources)
+    if not cut_assessable:
         cut_robustness = 0.0
     else:
-        cut_robustness = clamp((cut.cut_size - 1) / max(1, max_cut_size))
+        redundancy_floor = clamp((len(support_sources) - 1) / 2.0)
+        if cut is None:
+            cut_score = 1.0
+        elif cut.cut_size <= 1:
+            cut_score = 0.0
+        else:
+            cut_score = clamp((cut.cut_size - 1) / max(1, max_cut_size - 1))
+        cut_robustness = min(cut_score, redundancy_floor if len(support_sources) < 3 else 1.0)
 
     blind_spots = records
     decision_changing = [record for record in records if record.decision_changing]
@@ -340,8 +393,10 @@ def analyze_evidence_horizon(
     review_reasons: list[str] = []
     if decision_changing:
         review_reasons.append("evidence-horizon search found unseen clauses that change the gated decision")
-    if cut is not None and cut.cut_size == 1:
-        review_reasons.append("the decision depends on a single removable evidence item")
+    if not cut_assessable:
+        review_reasons.append("evidence-cut robustness is not assessable because no independently supported claim was found")
+    elif cut is not None and cut.cut_size == 1:
+        review_reasons.append("the decision depends on a single removable evidence source group")
     if any(record.unresolved for record in expanded_resolutions):
         review_reasons.append("horizon expansion exposes an unresolved precedence conflict")
     if any(item.status == "contradicted" for item in expanded_validations):

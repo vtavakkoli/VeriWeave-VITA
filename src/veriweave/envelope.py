@@ -21,6 +21,8 @@ def build_verification_envelope(
     enable_horizon: bool = True,
     enable_vita: bool = False,
     enable_boltzmann_attention: bool = False,
+    enable_provenance_robust_selection: bool = False,
+    repair_verified_citations: bool = False,
     vita_options: dict[str, Any] | None = None,
 ) -> VerificationEnvelope:
     claims = extract_atomic_claims(candidate.answer)
@@ -46,6 +48,7 @@ def build_verification_envelope(
             graph,
             candidate.decision,
             use_boltzmann_attention=enable_boltzmann_attention,
+            use_provenance_robust_selection=enable_provenance_robust_selection,
             **(vita_options or {}),
         )
     elif enable_horizon:
@@ -102,13 +105,40 @@ def build_verification_envelope(
     if boltzmann_certificate and boltzmann_certificate.residual_probability_mass > 0.35:
         review_reasons.append("Boltzmann policy attention leaves material probability mass outside the selected clause budget")
 
-    accepted_citations = sorted({
-        citation
-        for validation in validations
-        if validation.status == "supported"
-        for citation in validation.evidence_ids
-        if citation in candidate.citations
-    })
+    if repair_verified_citations:
+        # Deterministic grounded citation composition: every retained claim gets
+        # at least one winning evidence identifier, with a second citation from
+        # a different source when available for decision-bearing claims.
+        by_citation = {item.citation_id: item for item in effective_evidence}
+        repaired: list[str] = []
+        claim_by_id = {claim.id: claim for claim in claims}
+        for validation in validations:
+            if validation.status != "supported":
+                continue
+            candidates = list(validation.winning_evidence_ids or validation.evidence_ids)
+            chosen: list[str] = []
+            seen_sources: set[str] = set()
+            limit = 2 if claim_by_id.get(validation.claim_id) and claim_by_id[validation.claim_id].decisive else 1
+            for citation in candidates:
+                item = by_citation.get(citation)
+                source = item.source if item else citation
+                if citation in chosen:
+                    continue
+                if not chosen or source not in seen_sources:
+                    chosen.append(citation)
+                    seen_sources.add(source)
+                if len(chosen) >= limit:
+                    break
+            repaired.extend(chosen)
+        accepted_citations = sorted(set(repaired))
+    else:
+        accepted_citations = sorted({
+            citation
+            for validation in validations
+            if validation.status == "supported"
+            for citation in validation.evidence_ids
+            if citation in candidate.citations
+        })
     evidence_citations = {item.citation_id for item in effective_evidence}
     rejected_citations = sorted({citation for citation in candidate.citations if citation not in evidence_citations})
 
@@ -190,4 +220,5 @@ def build_verification_envelope(
         argumentation_certificate=argumentation_certificate.to_dict() if argumentation_certificate else None,
         temporal_drift_certificate=temporal_certificate.to_dict() if temporal_certificate else None,
         boltzmann_policy_attention=boltzmann_certificate.to_dict() if boltzmann_certificate else None,
+        effective_evidence=[item.to_dict() for item in effective_evidence],
     )

@@ -44,13 +44,24 @@ def evaluate(task: BenchmarkTask, trace: dict) -> dict:
     audit_citations = {str(item.get("citation_id", "")) for item in audit_evidence}
     valid_citations = [citation for citation in citations if citation in audit_citations]
     citation_precision = len(valid_citations) / max(1, len(citations)) if citations else 0.0
+    supported_validations = [item for item in validations if item.get("status") == "supported"]
+    cited_set = set(citations)
+    covered_supported_claims = 0
+    for item in supported_validations:
+        winning = set(item.get("winning_evidence_ids", []) or item.get("evidence_ids", []))
+        if cited_set & winning:
+            covered_supported_claims += 1
+    # A supported claim needs at least one valid winning citation; it does not
+    # need to cite every equivalent supporting passage returned by the audit.
+    citation_coverage = (
+        covered_supported_claims / len(supported_validations)
+        if supported_validations else 0.0
+    )
     supported_evidence_ids = {
         citation
-        for item in validations
-        if item.get("status") == "supported"
-        for citation in item.get("evidence_ids", [])
+        for item in supported_validations
+        for citation in (item.get("winning_evidence_ids", []) or item.get("evidence_ids", []))
     }
-    citation_coverage = len(set(citations) & supported_evidence_ids) / max(1, len(supported_evidence_ids)) if supported_evidence_ids else 0.0
 
     expected_refs = set(task.expected_policy_refs)
     method_evidence_text = " ".join(
@@ -66,12 +77,25 @@ def evaluate(task: BenchmarkTask, trace: dict) -> dict:
     review_accuracy = 1.0 if review_expected is None or bool(review_expected) == bool(trace.get("human_review_required")) else 0.0
 
     graph_paths = sum(1 for item in method_evidence if item.get("graph_path")) / max(1, len(method_evidence)) if method_evidence else 0.0
+    cited_method_evidence = [item for item in method_evidence if item.get("citation_id") in cited_set]
+    graph_path_provenance = (
+        sum(1 for item in cited_method_evidence if item.get("graph_path")) / len(cited_method_evidence)
+        if cited_method_evidence else 0.0
+    )
+    source_version_provenance = (
+        sum(
+            1
+            for item in cited_method_evidence
+            if item.get("source") and item.get("version") and item.get("citation_id")
+        ) / len(cited_method_evidence)
+        if cited_method_evidence else 0.0
+    )
     has_envelope = 1.0 if trace.get("verification_envelope") else 0.0
     has_resolution = 1.0 if trace.get("method_resolutions") else 0.0
     traceability = mean([citation_precision, citation_coverage, graph_paths, max(has_envelope, has_resolution)])
 
     counterfactual_stability = float(audit_horizon.get("horizon_stability", 0.0))
-    evidence_cut_robustness = float(audit_horizon.get("evidence_cut_robustness", 0.0))
+    evidence_cut_robustness = float(audit_horizon.get("evidence_cut_robustness", 0.0)) if claim_precision > 0.0 else 0.0
     decision_changing_blind_spots = len(audit_horizon.get("decision_changing_blind_spots", []))
     unseen_evidence_rate = float(audit_horizon.get("unseen_evidence_rate", 0.0))
     decision_space_width = int(audit_vita.get("decision_space_width", 0))
@@ -116,7 +140,14 @@ def evaluate(task: BenchmarkTask, trace: dict) -> dict:
 
     answer_quality = mean([decision_accuracy, review_accuracy, answer_similarity])
     verification_quality = mean([claim_precision, 1.0 - unsupported_claim_rate, contradiction_safety])
-    provenance_quality = mean([provenance_coverage, temporal_validity, applicability, citation_precision, citation_coverage])
+    provenance_quality = mean([
+        provenance_coverage,
+        temporal_validity,
+        citation_precision,
+        citation_coverage,
+        graph_path_provenance,
+        source_version_provenance,
+    ])
     retrieval_quality = graph_reference_recall
     overall = (
         0.35 * answer_quality
@@ -139,6 +170,8 @@ def evaluate(task: BenchmarkTask, trace: dict) -> dict:
         "applicability_accuracy": round(applicability, 6),
         "citation_precision": round(citation_precision, 6),
         "citation_coverage": round(citation_coverage, 6),
+        "graph_path_provenance": round(graph_path_provenance, 6),
+        "source_version_provenance": round(source_version_provenance, 6),
         "graph_reference_recall": round(graph_reference_recall, 6),
         "traceability_score": round(traceability, 6),
         "counterfactual_stability": round(counterfactual_stability, 6),

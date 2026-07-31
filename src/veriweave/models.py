@@ -175,6 +175,7 @@ class VerificationEnvelope:
     argumentation_certificate: dict[str, Any] | None = None
     temporal_drift_certificate: dict[str, Any] | None = None
     boltzmann_policy_attention: dict[str, Any] | None = None
+    effective_evidence: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -217,6 +218,7 @@ class VITACertificate:
     requires_review: bool
     review_reasons: list[str]
     graph_digest: str
+    selection_certificate: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

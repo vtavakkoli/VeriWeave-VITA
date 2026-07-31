@@ -1,90 +1,58 @@
-# VeriWeave-VITA-BPA
+# VeriWeave-VITA-PRO
 
-**VITA** stands for **Verification-Impact, Temporal, and Argumentation** reasoning.
+**VITA** means **Verification-Impact, Temporal, and Argumentation** reasoning.
 
-**VeriWeave-VITA-BPA** is a research prototype for auditing LLM decisions over evolving policy graphs when decisive evidence may be outside the initially retrieved subgraph, may arise only from a combination of clauses, and cannot be covered reliably by deterministic top-*k* expansion.
+**VeriWeave-VITA-PRO** replaces diffuse Boltzmann coalition attention with
+**Provenance-Robust Optimization (PRO)**: a deterministic, diversity-aware
+selector that prioritizes current, authoritative, independently sourced policy
+evidence while still surfacing contradictions, overrides, and version risks.
 
-> Paper direction: **VeriWeave-VITA-BPA: Verification-Impact, Temporal and Argumentation Reasoning with Boltzmann Policy Attention for Coalitional Counterevidence Certification over Evolving Policy Graphs**
+> Proposed paper title: **VeriWeave-VITA-PRO: Provenance-Robust Policy Evidence Optimization and Counterfactual Certification for LLM Decisions over Evolving Graphs**
 
-The central question is:
+## Why PRO replaces BPA
 
-> **Which omitted policy-clause set deserves the limited verification budget, and how stable is the decision under interacting counterevidence and policy evolution?**
+The completed 600-task run showed that VITA-BPA improved citation coverage and
+raw evidence-cut robustness, but reduced decision accuracy and human-review
+routing compared with VITA. The attention distribution was also almost uniform,
+so it did not reliably focus the verification budget on a small decisive set.
 
-## Main addition: Boltzmann Policy Attention
+PRO uses a deterministic submodular-style objective instead of a Boltzmann
+probability distribution. It rewards:
 
-Boltzmann Policy Attention (BPA) is an inference-time energy model over **sets of policy clauses**, not a modification of Transformer token attention. For a candidate coalition \(S\), the implementation defines:
+- claim and question coverage;
+- complete source, version, citation, and graph-path provenance;
+- current and higher-authority clauses;
+- independent support from different sources;
+- contradiction, override, supersession, and modality-risk relations;
+- concept diversity;
+- low redundancy between selected clauses.
 
-```text
-P(S | q, d, G) ∝ exp(U(S) / τ)
-```
+The selector emits a machine-readable certificate containing the selected
+clauses, marginal scores, provenance completeness, current-evidence rate,
+source diversity, independent-support score, risk-relation coverage, and
+residual risk mass.
 
-where:
+## Important evaluation corrections
 
-- `q` is the question and extracted claims;
-- `d` is the provisional decision;
-- `G` is the policy property graph;
-- `U(S)` combines unary clause utility and pairwise policy couplings;
-- `τ` is an adaptive, annealed temperature.
+Version 4.2.0 also fixes three methodological problems:
 
-Unary utility considers semantic relevance, decision-conditioned risk, authority, temporal currency, structural graph proximity, and concept novelty. Pairwise couplings reward clause sets that should be inspected together, including:
+1. **Strict model execution.** A transient Ollama failure is retried and does
+   not disable the model for the rest of the run. In strict mode, exhausted
+   retries stop the experiment instead of silently mixing LLM and fallback
+   outputs.
+2. **Claim-level citation coverage.** A supported claim is covered when at
+   least one valid winning citation is supplied; the model is no longer
+   penalized for not citing every equivalent passage.
+3. **Assessable evidence cuts.** Evidence-cut robustness is zero when no
+   independently supported claim exists. Cuts remove independent source groups,
+   not merely individual clauses from the same source.
 
-- explicit contradiction;
-- `OVERRIDES` or version succession;
-- opposed normative modalities;
-- shared policy concepts;
-- same-source version pairs;
-- temporal contrast.
+PRO also uses the same candidate-generation prompt as the other VeriWeave
+variants, avoiding prompt wording as a confound in the ablation.
 
-Near-duplicate clauses receive a repulsive coupling. The algorithm exactly enumerates bounded coalitions, calculates marginal clause attention, and selects a clause set that captures a configurable share of normalized marginal clause-attention mass within a hard evidence budget; it separately reports the probability of coalitions fully covered by that set.
+## Methods
 
-### Why this is different from softmax top-*k*
-
-A top-*k* retriever scores clauses independently. BPA assigns probability to **interacting clause coalitions**. A moderate-scoring clause can therefore receive high marginal attention because it completes a high-risk version pair, contradiction, or scope–exception interaction.
-
-### Adaptive annealing
-
-A flatter unary landscape or denser interaction graph increases the exploration temperature. Each closure round then cools the temperature:
-
-```text
-τ_r = max(τ_min, τ_adaptive × anneal_rate^(r-1))
-```
-
-Early rounds explore competing policy sets; later rounds concentrate on the most consequential VITA candidates.
-
-### BPA certificate
-
-Every BPA run can emit a machine-readable certificate containing:
-
-- temperature schedule;
-- unary energies and their components;
-- pairwise couplings and reasons;
-- highest-probability coalitions;
-- marginal clause attention;
-- selected marginal attention mass;
-- covered-coalition probability;
-- residual probability mass;
-- normalized entropy;
-- effective sample size;
-- risk-tail mass;
-- free energy and graph digest.
-
-See [`docs/boltzmann_policy_attention.md`](docs/boltzmann_policy_attention.md).
-
-## Full verification architecture
-
-BPA extends, rather than replaces, the previous mechanisms:
-
-1. **Claim Verification Envelope** — decomposes the answer and validates support, contradiction, applicability, temporal validity, and provenance.
-2. **Evidence Horizon Search** — searches outside the initial subgraph for individually decision-changing clauses.
-3. **Coalitional Counterevidence Closure** — tests interacting omitted clauses and detects synergistic blind spots.
-4. **Two-Sided VITA Decision-Space** — reports the most permissive and most restrictive decisions reachable under tested evidence subsets.
-5. **Precedence-Grounded Argumentation** — resolves attacks using explicit overrides, version currency, authority, applicability, and modality.
-6. **Temporal Decision-Drift Replay** — checks whether an earlier answer remains valid across policy snapshots.
-7. **Boltzmann Policy Attention** — allocates the bounded VITA search budget over interacting policy-clause sets and quantifies unselected probability mass.
-
-## Controlled methods
-
-The benchmark now supports nine methods:
+The benchmark supports:
 
 1. Direct LLM
 2. Text RAG
@@ -94,89 +62,62 @@ The benchmark now supports nine methods:
 6. VeriWeave-Core
 7. VeriWeave-Horizon
 8. VeriWeave-VITA
-9. **VeriWeave-VITA-BPA**
+9. VeriWeave-VITA-BPA
+10. **VeriWeave-VITA-PRO**
 
-The graph baselines are transparent standard-library approximations for controlled comparison; they are not official reproductions.
-
-The principal ablation is:
-
-```text
-Core
-  + singleton omitted-evidence testing             = Horizon
-  + coalitional closure, argumentation, drift      = VITA
-  + energy-based coalition attention and annealing = VITA-BPA
-```
-
-## Fair evaluation
-
-Every method receives the same independent post-hoc audit, including the same bounded BPA stress test. Method-produced certificates are reported separately. The evaluator does not add citations, does not replace the model decision with keyword rules, and separates answer quality from verification, provenance, retrieval, and robustness metrics.
-
-Required BPA ablations include:
-
-- deterministic VITA ranking versus BPA;
-- unary-only BPA versus pairwise couplings;
-- fixed versus adaptive temperature;
-- no annealing versus annealing;
-- singleton versus pair and triple policy sets;
-- equal candidate, subset-test, and latency budgets;
-- shuffled contradiction/version edges;
-- temperature and attention-mass sensitivity.
-
-## Installation and execution
+## Run the recommended comparison
 
 ```bash
 python -m pip install -e .
+
+OLLAMA_MODEL=qwen3:30b-a3b \
+QWEN_NO_THINK=true \
+OLLAMA_TEMPERATURE=0.7 \
+OLLAMA_TOP_P=0.8 \
+OLLAMA_TOP_K=20 \
+STRICT_MODEL_RUN=true \
+METHODS="VeriWeave-VITA,VeriWeave-VITA-BPA,VeriWeave-VITA-PRO" \
+PYTHONPATH=src \
+python -m veriweave.main
 ```
 
-Run the full benchmark:
+Use your installed Ollama model identifier if it differs. The client adds
+`/no_think` automatically for Qwen3 when `QWEN_NO_THINK=true`, and the
+default sampling parameters follow the official non-thinking profile. They can
+be overridden through environment variables for model ablations.
+
+## Full benchmark
 
 ```bash
-PYTHONPATH=src python -m veriweave.main
+OLLAMA_ENABLED=true \
+STRICT_MODEL_RUN=true \
+OLLAMA_MAX_RETRIES=3 \
+OLLAMA_RETRY_BACKOFF_SECONDS=1.0 \
+PYTHONPATH=src \
+python -m veriweave.main
 ```
 
-Example with Ollama:
+A paper-valid run must finish with:
+
+```json
+"valid_for_paper": true
+```
+
+in `result/manifest.json`, with zero fallback calls.
+
+## Offline software smoke test
 
 ```bash
-OLLAMA_MODEL=gemma4:31b PYTHONPATH=src python -m veriweave.main
+OLLAMA_ENABLED=false \
+STRICT_MODEL_RUN=false \
+MAX_TASKS=8 \
+METHODS="VeriWeave-VITA,VeriWeave-VITA-BPA,VeriWeave-VITA-PRO" \
+PYTHONPATH=src \
+python -m veriweave.main
 ```
 
-Run only the new method:
-
-```bash
-METHODS=VeriWeave-VITA-BPA \
-BOLTZMANN_TEMPERATURE=0.75 \
-BOLTZMANN_ATTENTION_MASS=0.90 \
-PYTHONPATH=src python -m veriweave.main
-```
-
-Offline software smoke test:
-
-```bash
-OLLAMA_ENABLED=false MAX_TASKS=8 PYTHONPATH=src python -m veriweave.main
-```
-
-CLI example:
-
-```bash
-veriweave --model gemma4:31b --temperature 0.75 --attention-mass 0.90
-```
-
-## Deterministic challenges
-
-```bash
-PYTHONPATH=src python -m veriweave.horizon_challenge
-PYTHONPATH=src python -m veriweave.vita_challenge
-PYTHONPATH=src python -m veriweave.boltzmann_challenge
-```
-
-The BPA challenge currently passes **4/4** deterministic mechanism checks:
-
-- the policy-set distribution is normalized;
-- lower temperature produces more concentrated attention;
-- pairwise coupling surfaces a current counterrule and its obsolete predecessor;
-- VITA integration emits a BPA certificate and exposes restrictive decisions.
-
-These are software and mechanism checks, not LLM-quality results.
+Offline outputs verify software only and must not be reported as experimental
+LLM results.
 
 ## Tests
 
@@ -184,44 +125,25 @@ These are software and mechanism checks, not LLM-quality results.
 PYTHONPATH=src python -m unittest discover -s tests -v
 ```
 
-The repository contains **20 passing tests**.
+Version 4.2.0 contains **24 passing tests**, including regression tests for
+zero-support evidence cuts, claim-level citation coverage, and PRO selection.
 
-## New metrics
-
-Common-audit metrics:
-
-- `attention_selected_mass`
-- `attention_residual_mass`
-- `attention_entropy`
-- `attention_effective_sample_size`
-- `attention_risk_tail_mass`
-
-Method-specific metrics:
-
-- `method_attention_selected_mass`
-- `method_attention_residual_mass`
-- `method_attention_entropy`
-- `method_attention_effective_sample_size`
-- `method_attention_risk_tail_mass`
-- `method_attention_selected_clauses`
-
-These complement decision-space width, closure convergence, residual risk, synergistic blind spots, argumentation conflict-freedom, temporal stability, and evidence-cut robustness.
-
-## Repository structure
+## Key files
 
 ```text
-src/veriweave/
-  boltzmann_policy_attention.py  # exact policy-set energy model and certificate
-  vita.py                    # coalitional closure and two-sided VITA decision space
-  argumentation.py               # precedence-grounded evidence arguments
-  temporal.py                    # version replay and decision drift
-  horizon.py                     # singleton omitted-evidence analysis
-  envelope.py                    # multi-certificate verification envelope
-  audit.py                       # identical post-hoc audit for all methods
-  evaluators.py                  # separated quality and robustness metrics
-  boltzmann_challenge.py         # deterministic BPA challenge
+src/veriweave/provenance_robust_selection.py  # PRO selector and certificate
+src/veriweave/vita.py                         # VITA closure with PRO or BPA
+src/veriweave/horizon.py                      # source-group evidence cuts
+src/veriweave/evaluators.py                   # corrected provenance metrics
+src/veriweave/ollama_client.py                # retries and strict execution
+src/veriweave/agents.py                       # shared generation prompt
 ```
 
 ## Research-use warning
 
-The included corpus is synthetic or real-world-inspired and de-identified. Exact coalition enumeration is bounded and does not prove global completeness. The BPA energy terms are interpretable hand-designed features, not learned optimal weights. Strong empirical claims require a held-out independently curated policy corpus, human annotations of decisive clause sets, multiple models and seeds, faithful external baselines, equal-compute controls, and preregistered hyperparameters. Earlier ClaimGraph, VeriWeave-Horizon, or VeriWeave-VITA scores must not be reused as VITA-BPA results.
+The included policy corpus and benchmark are synthetic or real-world-inspired.
+PRO is deterministic but does not prove global completeness. Strong scientific
+claims require a fresh complete model-backed run, multiple seeds and models,
+human-validated policy references, faithful external baselines, and equal
+candidate and latency budgets. Do not reuse the mixed fallback run as final
+paper evidence.

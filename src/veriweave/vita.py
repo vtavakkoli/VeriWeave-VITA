@@ -19,6 +19,7 @@ budgets; it is not a completeness theorem over an arbitrary corpus.
 from itertools import combinations
 from .argumentation import build_argumentation_certificate
 from .boltzmann_policy_attention import attend_policy_candidates, merge_attention_certificates
+from .provenance_robust_selection import select_provenance_robust_candidates, merge_selection_certificates
 from .graph import PropertyGraph, infer_concepts
 from .horizon import _horizon_candidates, _gated_decision, _status_map
 from .models import (
@@ -235,6 +236,7 @@ def analyze_vita_decision_space(
     max_rounds: int = 3,
     max_expand_per_round: int = 4,
     use_boltzmann_attention: bool = False,
+    use_provenance_robust_selection: bool = False,
     boltzmann_max_candidates: int = 12,
     boltzmann_temperature: float = 0.75,
     boltzmann_min_temperature: float = 0.20,
@@ -261,6 +263,7 @@ def analyze_vita_decision_space(
     converged = False
     rounds_run = 0
     attention_rounds: list[BoltzmannPolicyAttentionCertificate] = []
+    selection_rounds = []
 
     for round_index in range(1, max_rounds + 1):
         rounds_run = round_index
@@ -270,7 +273,19 @@ def analyze_vita_decision_space(
             question, claims, expanded, graph, max_candidates=max(1, len(graph.nodes))
         )
         candidates = [item for item in all_candidates if item.clause_id not in existing]
-        if use_boltzmann_attention:
+        if use_provenance_robust_selection:
+            selection_universe = candidates[: max(max_candidates, boltzmann_max_candidates)]
+            pool, selection_certificate = select_provenance_robust_candidates(
+                question,
+                claims,
+                expanded,
+                selection_universe,
+                graph,
+                selection_budget=max_candidates,
+            )
+            selection_rounds.append(selection_certificate)
+            residual_masses.append(selection_certificate.residual_risk_mass)
+        elif use_boltzmann_attention:
             attention_universe = candidates[: max(max_candidates, boltzmann_max_candidates)]
             pool, attention_certificate = attend_policy_candidates(
                 question,
@@ -369,7 +384,7 @@ def analyze_vita_decision_space(
     if width > 0:
         review_reasons.append("the answer is not invariant across the tested evidence search space")
     residual = max(residual_masses, default=0.0)
-    residual_threshold = 0.35 if use_boltzmann_attention else 0.25
+    residual_threshold = 0.35 if use_boltzmann_attention else (0.30 if use_provenance_robust_selection else 0.25)
     if residual > residual_threshold:
         review_reasons.append("a material fraction of VITA attention or ranked risk remained outside the coalition budget")
     if not converged:
@@ -384,6 +399,7 @@ def analyze_vita_decision_space(
         ),
         16,
     )
+    selection_certificate = merge_selection_certificates(question, selection_rounds)
     certificate = VITACertificate(
         certificate_id=f"vita:{stable_hash(question + candidate_decision + digest)}",
         baseline_decision=baseline_decision,
@@ -402,6 +418,7 @@ def analyze_vita_decision_space(
         requires_review=bool(review_reasons),
         review_reasons=review_reasons,
         graph_digest=digest,
+        selection_certificate=selection_certificate.to_dict() if selection_certificate else None,
     )
     boltzmann_certificate = merge_attention_certificates(question, attention_rounds)
     argumentation = build_argumentation_certificate(expanded, graph, resolutions)
