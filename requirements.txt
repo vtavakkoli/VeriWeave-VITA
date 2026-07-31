@@ -1,2 +1,0 @@
-# VeriWeave uses only the Python standard library at runtime.
-# Install the local package with: pip install -e .
