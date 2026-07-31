@@ -1,10 +1,21 @@
 cff-version: 1.2.0
-message: "If you use VeriWeave-VITA-BPA, please cite the software and accompanying paper."
-title: "VeriWeave-VITA-BPA: Verification-Impact, Temporal and Argumentation Reasoning with Boltzmann Policy Attention"
-version: 4.1.0
-date-released: 2026-07-14
+message: "If you use VeriWeave-VITA-PRO in research, please cite this software and the associated paper when available."
+type: software
+title: "VeriWeave-VITA-PRO"
+abstract: "Research software for provenance-robust evidence optimization, counterfactual verification, temporal reasoning, and argumentation over evolving policy graphs."
 authors:
-  - family-names: Tavakkoli
-    given-names: Vahid
-repository-code: "https://github.com/vtavakkoli/VeriWeave-VITA-BPA"
+  - family-names: "Tavakkoli"
+    given-names: "Vahid"
+version: 4.2.0
+date-released: 2026-07-31
 license: Apache-2.0
+repository-code: "https://github.com/vtavakkoli/VeriWeave-VITA"
+url: "https://github.com/vtavakkoli/VeriWeave-VITA"
+keywords:
+  - large language models
+  - policy graphs
+  - provenance
+  - verification
+  - argumentation
+  - temporal reasoning
+  - graph retrieval

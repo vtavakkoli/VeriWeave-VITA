@@ -1,73 +1,108 @@
-# VeriWeave-VITA-BPA Architecture
+# Architecture
 
-VITA is the **Verification-Impact, Temporal, and Argumentation** layer that performs bounded coalitional stress testing, precedence-grounded argumentation, and policy-version replay.
+VeriWeave-VITA-PRO separates language generation from policy verification. The system treats an LLM answer as a candidate decision that must be independently checked against a typed, version-aware policy graph.
+
+## Processing pipeline
 
 ```text
-question + provisional decision
+Question + policy corpus
           |
           v
-initial retriever ---------> initial policy subgraph
-          |                           |
-          v                           v
-candidate LLM answer ------------> atomic claims
-                                      |
-                                      v
-                     omitted policy-clause candidates
-                                      |
-                                      v
-                 Boltzmann Policy Attention (BPA)
-           unary energies + pairwise policy couplings
-              adaptive temperature + round annealing
-                                      |
-                 marginal attention / mass certificate
-                                      |
-                                      v
-                  bounded coalitional VITA tests
-                                      |
-             +------------------------+---------------------+
-             |                        |                     |
-             v                        v                     v
-     decision space      grounded argumentation    temporal replay
-             |                        |                     |
-             +------------------------+---------------------+
-                                      v
-                       multi-certificate envelope
+Policy loader and typed property graph
+          |
+          +-------------------------------+
+          |                               |
+          v                               v
+Initial retrieval                  Independent audit retrieval
+          |                               |
+          v                               |
+Candidate LLM response                    |
+          |                               |
+          v                               |
+Atomic claim extraction                   |
+          |                               |
+          +---------------+---------------+
+                          v
+                Claim-level validation
+        support / contradiction / applicability
+          provenance / version / precedence
+                          |
+          +---------------+----------------+
+          |                                |
+          v                                v
+Evidence Horizon search          PRO candidate selection
+(single omitted clauses)         (diverse, current, authoritative,
+                                  independently supported evidence)
+          |                                |
+          +---------------+----------------+
+                          v
+              Bounded VITA closure
+       singleton and coalitional counterevidence
+                          |
+       +------------------+------------------+
+       |                  |                  |
+       v                  v                  v
+Decision-space       Argumentation      Temporal replay
+certificate          certificate        and drift check
+       |                  |                  |
+       +------------------+------------------+
+                          v
+              Verification envelope
+                          |
+                          v
+        Trace, metrics, manifest, and report
 ```
 
-## Policy-set attention
+## Policy graph
 
-BPA first receives a bounded high-recall candidate universe. It computes unary clause energies from relevance, decision risk, authority, currency, graph structure, and novelty. It then computes pairwise couplings from typed policy interactions. Exact coalition probabilities produce marginal attention and a selected clause set subject to a probability-mass target and hard budget.
+The graph models:
 
-The selected probability mass and residual mass replace the previous practice of reporting only residual raw retrieval score. This does not make the search complete; it makes the budget boundary explicit under the specified energy model.
+- documents and policy clauses;
+- concepts and applicability relationships;
+- policy versions and currency;
+- authorities and authority rank;
+- support, contradiction, override, supersession, and potential-conflict relations.
+
+The graph is built from `data/policies/` and exported at runtime to `data/graph/evidence_graph.json`. Generated exports are not version-controlled; `data/graph/schema.json` is the durable schema contract.
+
+## Provenance-Robust Optimization
+
+PRO is the recommended evidence-selection strategy. It is deterministic under fixed inputs and scores candidates using a coverage-and-diversity objective that rewards:
+
+- claim and question coverage;
+- complete source, version, citation, and graph-path provenance;
+- current and higher-authority clauses;
+- independent support from different sources;
+- contradiction, override, supersession, and modality-risk relations;
+- concept diversity;
+- low redundancy.
+
+The resulting certificate records selected clauses, marginal gains, provenance completeness, source diversity, independent-support coverage, risk-relation coverage, residual risk mass, and a graph digest.
+
+PRO does not claim globally complete evidence discovery. It makes the bounded selection process explicit, reproducible, and inspectable.
+
+## Evidence Horizon
+
+Evidence Horizon searches outside the initially visible evidence set for omitted clauses that independently change the decision or increase review requirements. It also estimates fragility through bounded evidence-cut analysis.
 
 ## VITA closure
 
-The selected pool is tested as singletons and bounded coalitions. Restrictive or synergistic witnesses can be added to the effective evidence set. BPA is rerun at the next round with an annealed temperature, allowing early exploration and later concentration.
+VITA performs bounded singleton and coalition tests over omitted evidence. It records permissive and restrictive outcomes, synergistic blind spots, closure convergence, and the effective evidence set.
 
-The process stops when:
+The closure stops when no candidates remain, no new decision-changing evidence is found, no selected evidence can be added, or the configured round budget is exhausted.
 
-- no candidates remain;
-- no new restrictive or synergistic effect is found;
-- no selected evidence can be added; or
-- the round budget is exhausted.
+## Argumentation and precedence
 
-## Certificates
+Explicit policy relations, version currency, authority rank, scope, and modality are used to resolve competing clauses. The argumentation certificate reports attacks, successful defeats, unresolved conflicts, and conflict freedom.
 
-The Verification Envelope can include:
+## Temporal replay
 
-1. claim validation and precedence resolution;
-2. Evidence Horizon Certificate;
-3. VITA Decision-Space Certificate;
-4. Argumentation Certificate;
-5. Temporal Drift Certificate;
-6. **Boltzmann Policy Attention Certificate**.
+Temporal replay evaluates whether a decision remains valid across policy snapshots. It identifies decision drift, obsolete evidence, and cases that may require retrospective review.
 
-## Complexity
+## BPA ablation
 
-For `n` attention candidates and maximum policy-set size `m`, BPA exactly evaluates
+Boltzmann Policy Attention remains available as an ablation. It evaluates bounded policy-clause coalitions using unary energies, pairwise policy couplings, and a temperature schedule. BPA results must be reported separately from PRO results.
 
-```text
-Σ C(n, k), k = 1..m
-```
+## System boundary
 
-coalitions. The VITA layer then tests the selected evidence pool under its own bounded coalition budget. Defaults keep exact inference tractable. Large policy graphs require approximate inference and must report approximation error or calibration separately.
+VeriWeave is research software. It does not replace legal review, policy ownership, access control, model governance, or production authorization. A deployment must add identity, authorization, durable storage, audit protection, operational monitoring, and organization-specific policy lifecycle controls.

@@ -1,14 +1,38 @@
+# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
-.coverage
-.env
-.venv/
+.ruff_cache/
+.mypy_cache/
+.tox/
+.nox/
 build/
 dist/
+
+# Environments and local configuration
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Coverage and reports
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Generated experiment outputs
 result/*
 !result/.gitkeep
-!result/challenge/
-!result/challenge/*.json
-!result/challenge/*.csv
+
+# Runtime-generated graph exports
+data/graph/*.json
+!data/graph/schema.json
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

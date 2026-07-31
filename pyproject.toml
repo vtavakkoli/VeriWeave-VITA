@@ -5,19 +5,39 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "veriweave-vita-pro"
 version = "4.2.0"
-description = "Verification-impact, temporal and argumentation reasoning with provenance-robust optimization for auditable LLM policy decisions"
+description = "Provenance-robust verification, temporal reasoning, and argumentation for auditable LLM policy decisions"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [{name = "Vahid Tavakkoli"}]
-keywords = ["graph-rag", "knowledge-graph", "llm", "counterfactual", "coalitional", "argumentation", "temporal-drift", "verification", "policy", "provenance", "submodular-selection", "evidence-robustness"]
+keywords = [
+  "argumentation",
+  "counterfactual",
+  "evidence-robustness",
+  "graph-rag",
+  "knowledge-graph",
+  "llm",
+  "policy",
+  "provenance",
+  "submodular-selection",
+  "temporal-drift",
+  "verification",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/vtavakkoli/VeriWeave-VITA"
+Repository = "https://github.com/vtavakkoli/VeriWeave-VITA"
+Issues = "https://github.com/vtavakkoli/VeriWeave-VITA/issues"
+Documentation = "https://github.com/vtavakkoli/VeriWeave-VITA#readme"
 
 [project.scripts]
 veriweave = "veriweave.cli:main"
@@ -30,3 +50,5 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["veriweave*"]
+exclude = ["claimgraph*"]
