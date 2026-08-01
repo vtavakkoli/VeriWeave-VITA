@@ -32,10 +32,11 @@ def _support_score(claim: str, evidence: Evidence) -> float:
     if incompatible:
         score *= 0.35
 
-    # An exact inline citation is a strong grounding signal, but it cannot make
-    # semantically unrelated text fully supported by itself.
-    if evidence.citation_id in extract_citation_ids(claim):
-        score = max(score, 0.56 + 0.34 * score)
+    # An exact inline citation is a strong grounding signal only when the claim
+    # is also semantically related to the cited clause. This prevents a citation
+    # placed next to unrelated prose from manufacturing support.
+    if evidence.citation_id in extract_citation_ids(claim) and score >= 0.08:
+        score = max(score, 0.44 + 0.42 * score)
     return clamp(score)
 
 
