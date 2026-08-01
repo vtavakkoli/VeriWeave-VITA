@@ -75,27 +75,53 @@ def _parse_candidate(raw: str, evidence: list[Evidence]) -> CandidateResponse:
         return CandidateResponse(answer, decision, citations, review, raw, "parsed")
     except Exception:
         answer = first_sentence(raw) or _fallback_candidate(evidence).answer
+        inferred = _decision_from_answer_only(answer)
         return CandidateResponse(
             answer=answer,
-            decision=_decision_from_answer_only(answer),
+            decision=inferred,
             citations=[],
-            human_review_required=_decision_from_answer_only(answer) in {"unknown", "needs_review"},
+            human_review_required=inferred in {"unknown", "needs_review"},
             raw=raw,
             parse_status="unstructured_recovery",
         )
 
 
+def _task_guidance(task: BenchmarkTask) -> str:
+    if task.task_type == "conflict_and_version_reasoning":
+        return (
+            "The question explicitly tests a policy conflict or version choice. State the rule that wins under "
+            "authority and currency, set decision=needs_review, and set human_review_required=true so the "
+            "accountable policy owner can confirm the resolution."
+        )
+    if task.task_type == "hallucination_and_evidence_verification":
+        return (
+            "Verify the proposition directly. Use not_allowed when current evidence categorically rejects it; "
+            "use conditional when it may proceed only after non-human safeguards are met; use needs_review "
+            "only when human oversight is itself required or decisive evidence remains unresolved."
+        )
+    if task.task_type == "applicability_and_review_routing":
+        return (
+            "Identify whether the rule applies and route to human review only when a reviewer, approver, owner, "
+            "or oversight body must act. A requirement to log a human-review flag is not itself a review mandate."
+        )
+    return (
+        "Answer the policy question directly and choose the least restrictive decision fully supported by the "
+        "current winning evidence."
+    )
+
+
 def _prompt(task: BenchmarkTask, evidence: list[Evidence], method: str) -> str:
     evidence_block = "\n".join(
-        f"[{item.citation_id}] role={item.role}; version={item.version}; current={item.is_current}; modality={item.modality}; text={item.text}"
+        f"[{item.citation_id}] role={item.role}; version={item.version}; current={item.is_current}; "
+        f"modality={item.modality}; text={item.text}"
         for item in evidence
     )
     if method.startswith("VeriWeave-"):
         method_guidance = (
-            "Use support and counterevidence, respect current versions and precedence, "
-            "write one atomic sentence per claim, and cite every sentence with at least "
-            "one evidence identifier. Mark needs_review only when the supplied evidence "
-            "is genuinely insufficient or conflicting."
+            "Use support and counterevidence, prefer current and higher-authority versions, and cite every "
+            "answer sentence with at least one supplied evidence identifier. Return one to three concise "
+            "sentences; combine closely related controls instead of producing a long checklist. "
+            + _task_guidance(task)
         )
         generation_profile = "VeriWeave"
     else:
@@ -107,24 +133,44 @@ def _prompt(task: BenchmarkTask, evidence: list[Evidence], method: str) -> str:
             "Steiner GraphRAG": "Use the connected-subgraph evidence.",
         }[method]
         generation_profile = method
+
     return f"""You are participating in a controlled policy question-answering benchmark.
 {method_guidance}
+
+Decision semantics:
+- allowed: the action is permitted without an unmet prerequisite.
+- conditional: the action may proceed after objective safeguards or controls are met.
+- needs_review: a human reviewer, approver, owner, or oversight body must act, or a decisive conflict remains.
+- not_allowed: a current winning rule categorically prohibits the action, not merely "without" a satisfiable prerequisite.
+- unknown: decisive supplied evidence is absent.
+Set human_review_required=true exactly when a human must review, approve, oversee, or resolve the case.
+Do not treat a requirement to record a human-review flag as a mandate to conduct review.
+
 Return exactly one JSON object with these keys:
-- answer: concise answer written as atomic factual or normative sentences
+- answer: concise answer written as one to three grounded sentences
 - decision: allowed | not_allowed | conditional | needs_review | unknown
 - citations: array containing only evidence identifiers shown below
 - human_review_required: boolean
 Do not copy a decision from retrieved evidence unless it answers the question. Do not invent citations.
 
 Generation profile: {generation_profile}
+Task type: {task.task_type}
 Question: {task.question}
 Evidence:
 {evidence_block or '[none]'}
 """
 
 
-def _generate_candidate(task: BenchmarkTask, evidence: list[Evidence], client: OllamaClient, method: str) -> CandidateResponse:
-    raw = client.generate(_prompt(task, evidence, method), {"method": method, "task_id": task.id, "expect_json": True})
+def _generate_candidate(
+    task: BenchmarkTask,
+    evidence: list[Evidence],
+    client: OllamaClient,
+    method: str,
+) -> CandidateResponse:
+    raw = client.generate(
+        _prompt(task, evidence, method),
+        {"method": method, "task_id": task.id, "task_type": task.task_type, "expect_json": True},
+    )
     return _parse_candidate(raw, evidence)
 
 
@@ -163,7 +209,14 @@ def run_method(
     vita_options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
-    retriever = _retriever_for(method, text_retriever, community_retriever, ppr_retriever, steiner_retriever, veriweave_retriever)
+    retriever = _retriever_for(
+        method,
+        text_retriever,
+        community_retriever,
+        ppr_retriever,
+        steiner_retriever,
+        veriweave_retriever,
+    )
     evidence = [] if method == "Direct LLM" else retriever.retrieve(task.question, top_k)
     candidate = _generate_candidate(task, evidence, client, method)
 
@@ -177,17 +230,29 @@ def run_method(
     resolutions: list[dict[str, Any]] = []
     output_evidence = [item.to_dict() for item in evidence]
 
-    if method in {"VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"}:
+    veriweave_methods = {
+        "VeriWeave-Core",
+        "VeriWeave-Horizon",
+        "VeriWeave-VITA",
+        "VeriWeave-VITA-BPA",
+        "VeriWeave-VITA-PRO",
+    }
+    if method in veriweave_methods:
         envelope = build_verification_envelope(
             candidate,
             evidence,
             graph,
             question=task.question,
+            task_type=task.task_type,
             enable_horizon=method == "VeriWeave-Horizon",
             enable_vita=method in {"VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"},
             enable_boltzmann_attention=method == "VeriWeave-VITA-BPA",
             enable_provenance_robust_selection=method == "VeriWeave-VITA-PRO",
-            repair_verified_citations=method == "VeriWeave-VITA-PRO",
+            repair_verified_citations=method in {
+                "VeriWeave-VITA",
+                "VeriWeave-VITA-BPA",
+                "VeriWeave-VITA-PRO",
+            },
             vita_options=vita_options,
         )
         answer = envelope.verified_answer
@@ -200,11 +265,22 @@ def run_method(
         output_evidence = envelope.effective_evidence
 
     subgraph_clause_ids = [
-        str(item.get("clause_id", "")) for item in output_evidence[: max(3, top_k)] if item.get("clause_id")
+        str(item.get("clause_id", ""))
+        for item in output_evidence[: max(3, top_k)]
+        if item.get("clause_id")
     ]
     subgraph = (
         graph.explanation_subgraph(subgraph_clause_ids, include_claims=claims)
-        if method in {"Community GraphRAG", "PPR GraphRAG", "Steiner GraphRAG", "VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"}
+        if method in {
+            "Community GraphRAG",
+            "PPR GraphRAG",
+            "Steiner GraphRAG",
+            "VeriWeave-Core",
+            "VeriWeave-Horizon",
+            "VeriWeave-VITA",
+            "VeriWeave-VITA-BPA",
+            "VeriWeave-VITA-PRO",
+        }
         else {"nodes": [], "edges": []}
     )
 
