@@ -56,9 +56,12 @@ def main() -> None:
     benchmark_path = Path(cfg.benchmark_file)
     if not benchmark_path.is_absolute():
         benchmark_path = cfg.root / benchmark_path
-    tasks = load_tasks(benchmark_path)
+    all_tasks = load_tasks(benchmark_path)
+    total_benchmark_tasks = len(all_tasks)
+    tasks = all_tasks[cfg.task_offset:]
     if cfg.max_tasks > 0:
         tasks = tasks[:cfg.max_tasks]
+    task_end_exclusive = cfg.task_offset + len(tasks)
 
     methods = cfg.method_list()
     trace_path = cfg.result_dir / "traces.jsonl"
@@ -91,7 +94,7 @@ def main() -> None:
         "timestamp": now(),
         "run_id": stable_hash(now() + cfg.ollama_model + str(cfg.seed)),
         "system": "VeriWeave-VITA-PRO",
-        "version": "4.2.0",
+        "version": "4.2.1",
         "platform": platform.platform(),
         "python": platform.python_version(),
         "model": cfg.ollama_model,
@@ -107,6 +110,9 @@ def main() -> None:
             "structured_json_schema": True,
         },
         "benchmark": str(benchmark_path),
+        "benchmark_total_tasks": total_benchmark_tasks,
+        "task_offset": cfg.task_offset,
+        "task_end_exclusive": task_end_exclusive,
         "tasks_evaluated": len(tasks),
         "task_type_distribution": dict(Counter(task.task_type for task in tasks)),
         "methods": methods,
@@ -155,7 +161,10 @@ def main() -> None:
         "graph": {"nodes": len(graph.nodes), "edges": len(graph.edges), "export": str(graph_path)},
         "note": "Offline fallback outputs verify software only and must not be reported as LLM experimental findings.",
     }
-    (cfg.result_dir / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+    (cfg.result_dir / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
     rows: list[dict] = []
     traces: list[dict] = []
@@ -204,13 +213,20 @@ def main() -> None:
                 failures.append({"task_id": task.id, "method": method, "error": str(exc)})
                 if cfg.strict_model_run and "Ollama" in str(exc):
                     (cfg.result_dir / "failures.json").write_text(
-                        json.dumps(failures, indent=2, ensure_ascii=False), encoding="utf-8"
+                        json.dumps(failures, indent=2, ensure_ascii=False),
+                        encoding="utf-8",
                     )
                     raise
 
     _write_csv(cfg.result_dir / "metrics.csv", rows)
-    (cfg.result_dir / "metrics.json").write_text(json.dumps(rows, indent=2, ensure_ascii=False), encoding="utf-8")
-    (cfg.result_dir / "failures.json").write_text(json.dumps(failures, indent=2, ensure_ascii=False), encoding="utf-8")
+    (cfg.result_dir / "metrics.json").write_text(
+        json.dumps(rows, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (cfg.result_dir / "failures.json").write_text(
+        json.dumps(failures, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     manifest["model_call_stats"] = dict(client.call_stats)
     expected_calls = len(tasks) * len(methods)
     manifest["expected_model_calls"] = expected_calls
@@ -221,9 +237,15 @@ def main() -> None:
         and client.call_stats["fallback"] == 0
     )
     (cfg.result_dir / "manifest.json").write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(manifest, indent=2, ensure_ascii=False),
+        encoding="utf-8",
     )
-    statistics = write_statistics(cfg.result_dir, rows, target="VeriWeave-VITA-PRO", seed=cfg.seed)
+    statistics = write_statistics(
+        cfg.result_dir,
+        rows,
+        target="VeriWeave-VITA-PRO",
+        seed=cfg.seed,
+    )
     generate_report(cfg.result_dir, rows, traces, manifest, statistics)
     logger.info("Report written to %s", cfg.result_dir / "report.html")
 

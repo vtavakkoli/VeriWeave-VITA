@@ -33,6 +33,7 @@ class Config:
     strict_model_run: bool = _bool_env("STRICT_MODEL_RUN", True)
     ollama_enabled: bool = _bool_env("OLLAMA_ENABLED", True)
     seed: int = int(os.getenv("SEED", "7"))
+    task_offset: int = max(0, int(os.getenv("TASK_OFFSET", "0")))
     max_tasks: int = int(os.getenv("MAX_TASKS", "0"))
     top_k: int = int(os.getenv("TOP_K", "6"))
     vita_max_candidates: int = int(os.getenv("VITA_MAX_CANDIDATES", "8"))
@@ -69,4 +70,15 @@ class Config:
             name = item.strip()
             if name in allowed and name not in result:
                 result.append(name)
-        return result or ["Direct LLM", "Text RAG", "Community GraphRAG", "PPR GraphRAG", "Steiner GraphRAG", "VeriWeave-Core", "VeriWeave-Horizon", "VeriWeave-VITA", "VeriWeave-VITA-BPA", "VeriWeave-VITA-PRO"]
+        return result or [
+            "Direct LLM",
+            "Text RAG",
+            "Community GraphRAG",
+            "PPR GraphRAG",
+            "Steiner GraphRAG",
+            "VeriWeave-Core",
+            "VeriWeave-Horizon",
+            "VeriWeave-VITA",
+            "VeriWeave-VITA-BPA",
+            "VeriWeave-VITA-PRO",
+        ]

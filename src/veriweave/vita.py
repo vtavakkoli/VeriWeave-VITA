@@ -2,43 +2,139 @@ from __future__ import annotations
 
 """Coalitional counterevidence closure and decision-space certification.
 
-VeriWeave-Horizon tests unseen clauses individually. This module extends that
-idea in three directions:
-
-1. it tests coalitions of omitted clauses, exposing interactions that no single
-   clause reveals;
-2. it derives a two-sided decision space rather than recording only
-   restrictive changes; and
-3. it iterates expansion until a bounded fixed point is reached.
-
-The implementation is deterministic and budgeted. ``closure_converged`` means
-no additional impact was found within the configured candidate and coalition
-budgets; it is not a completeness theorem over an arbitrary corpus.
+VeriWeave-Horizon tests unseen clauses individually. VITA additionally tests
+bounded evidence coalitions, derives a two-sided decision space, and iterates
+expansion toward a fixed point. Search uncertainty is reported explicitly, but
+only evidence that can materially change a decision or decisive claim blocks an
+otherwise verified answer.
 """
 
+import re
 from itertools import combinations
+
 from .argumentation import build_argumentation_certificate
 from .boltzmann_policy_attention import attend_policy_candidates, merge_attention_certificates
-from .provenance_robust_selection import select_provenance_robust_candidates, merge_selection_certificates
 from .graph import PropertyGraph, infer_concepts
-from .horizon import _horizon_candidates, _gated_decision, _status_map
+from .horizon import _gated_decision, _horizon_candidates, _status_map
 from .models import (
     ArgumentationCertificate,
-    BoltzmannPolicyAttentionCertificate,
     AtomicClaim,
+    BoltzmannPolicyAttentionCertificate,
     ClaimValidation,
     CoalitionRecord,
-    VITACertificate,
     ResolutionRecord,
     TemporalDriftCertificate,
+    VITACertificate,
 )
 from .precedence import resolve_precedence, winning_clause_ids
+from .provenance_robust_selection import (
+    merge_selection_certificates,
+    select_provenance_robust_candidates,
+)
 from .retrieval import Evidence
 from .temporal import build_temporal_drift_certificate
-from .utils import clamp, stable_hash, token_similarity
+from .utils import clamp, stable_hash, strip_citations, token_similarity
 from .validators import validate_claims
 
 SEVERITY = {"allowed": 0, "conditional": 1, "unknown": 2, "needs_review": 2, "not_allowed": 3}
+_CONDITION_MARKERS = (
+    " without ",
+    " unless ",
+    " until ",
+    " before ",
+    " only if ",
+    " subject to ",
+    " provided that ",
+    " except when ",
+)
+_REVIEW_PATTERNS = (
+    r"human (?:review|oversight) (?:is )?(?:required|mandatory)",
+    r"requires? (?:a )?(?:trained )?human (?:review|oversight)",
+    r"must (?:be )?reviewed by (?:a )?human",
+    r"must not .* without (?:a )?(?:trained )?human (?:review|oversight)",
+    r"prohibit(?:s|ed)? .* without (?:a )?(?:trained )?human (?:review|oversight)",
+    r"(?:review|approval|oversight) (?:is )?required before",
+    r"must (?:be )?approved before",
+    r"must approve before",
+    r"only (?:with|after) (?:a )?(?:trained )?human (?:review|oversight)",
+)
+
+
+def _requires_human_review(text: str) -> bool:
+    lower = f" {strip_citations(text).lower()} "
+    if "human-review flag" in lower or "human review flag" in lower:
+        return False
+    return any(re.search(pattern, lower) for pattern in _REVIEW_PATTERNS)
+
+
+def _is_conditional_rule(text: str) -> bool:
+    lower = f" {strip_citations(text).lower()} "
+    return any(marker in lower for marker in _CONDITION_MARKERS)
+
+
+def _relevant_winning_evidence(
+    claims: list[AtomicClaim],
+    evidence: list[Evidence],
+    validations: list[ClaimValidation],
+    resolutions: list[ResolutionRecord],
+) -> list[Evidence]:
+    validation_by_id = {item.claim_id: item for item in validations}
+    decisive = [claim for claim in claims if claim.decisive]
+    targets = decisive or claims
+    citation_ids: set[str] = set()
+    for claim in targets:
+        validation = validation_by_id.get(claim.id)
+        if not validation or validation.status != "supported":
+            continue
+        citation_ids.update(validation.winning_evidence_ids or validation.evidence_ids)
+
+    winners = winning_clause_ids(evidence, resolutions)
+    relevant = [
+        item
+        for item in evidence
+        if item.clause_id in winners and item.citation_id in citation_ids
+    ]
+    seen = {item.clause_id for item in relevant}
+
+    # Preserve VITA's two-sided decision-space property: a current winning
+    # normative clause may expose an over-conservative answer even when it is
+    # not the primary support passage for an explanatory claim. Requiring both
+    # concept and lexical agreement prevents the old concept-only overreach.
+    for item in evidence:
+        if (
+            item.clause_id not in winners
+            or item.clause_id in seen
+            or not item.is_current
+            or item.modality not in {"permission", "obligation", "prohibition"}
+        ):
+            continue
+        best_lexical = max(
+            (token_similarity(strip_citations(claim.text), item.text) for claim in targets),
+            default=0.0,
+        )
+        concept_match = any(
+            bool(set(infer_concepts(strip_citations(claim.text))) & set(item.concepts))
+            for claim in targets
+        )
+        if concept_match and best_lexical >= 0.22:
+            relevant.append(item)
+            seen.add(item.clause_id)
+
+    if relevant:
+        return relevant
+
+    fallback: list[Evidence] = []
+    for item in evidence:
+        if item.clause_id not in winners:
+            continue
+        for claim in targets:
+            clean_claim = strip_citations(claim.text)
+            concept_match = bool(set(infer_concepts(clean_claim)) & set(item.concepts))
+            lexical = token_similarity(clean_claim, item.text)
+            if concept_match and lexical >= 0.22:
+                fallback.append(item)
+                break
+    return fallback
 
 
 def _vita_decision(
@@ -48,35 +144,32 @@ def _vita_decision(
     validations: list[ClaimValidation],
     resolutions: list[ResolutionRecord],
 ) -> str:
-    """Derive a decision from winning normative evidence after safety gating.
+    """Derive the decision from verified winning normative evidence.
 
-    Unlike the singleton Horizon gate, the VITA needs a two-sided outcome
-    space. Once claims are admissible and conflicts are resolved, the modality
-    of the winning, claim-relevant clauses can make the provisional decision
-    either more restrictive or more permissive.
+    A prohibition with a satisfiable condition is not a categorical ban. Rules
+    requiring human review or oversight map to ``needs_review``; other
+    prerequisites map to ``conditional``. Only unconditional prohibitions map
+    to ``not_allowed``.
     """
     gated = _gated_decision(candidate_decision, claims, validations, resolutions)
     if gated == "needs_review":
         return gated
-    winners = winning_clause_ids(evidence, resolutions)
-    decisive = [claim for claim in claims if claim.decisive] or claims
-    relevant: list[Evidence] = []
-    for item in evidence:
-        if item.clause_id not in winners:
-            continue
-        for claim in decisive:
-            claim_concepts = set(infer_concepts(claim.text))
-            concept_match = bool(claim_concepts & set(item.concepts))
-            lexical_match = token_similarity(claim.text, item.text) >= 0.18
-            if concept_match or lexical_match:
-                relevant.append(item)
-                break
-    modalities = {item.modality for item in relevant}
-    if "prohibition" in modalities:
+
+    relevant = _relevant_winning_evidence(claims, evidence, validations, resolutions)
+    if not relevant:
+        return gated
+
+    prohibitions = [item for item in relevant if item.modality == "prohibition"]
+    obligations = [item for item in relevant if item.modality == "obligation"]
+    permissions = [item for item in relevant if item.modality == "permission"]
+
+    if any(_requires_human_review(item.text) for item in prohibitions + obligations):
+        return "needs_review"
+    if any(not _is_conditional_rule(item.text) for item in prohibitions):
         return "not_allowed"
-    if "obligation" in modalities:
+    if prohibitions or obligations:
         return "conditional"
-    if "permission" in modalities:
+    if permissions:
         return "allowed"
     return gated
 
@@ -89,7 +182,9 @@ def _change_signature(
 ) -> tuple[list[str], bool]:
     statuses = _status_map(validations)
     changed = sorted(
-        claim_id for claim_id, status in statuses.items() if baseline_statuses.get(claim_id) != status
+        claim_id
+        for claim_id, status in statuses.items()
+        if baseline_statuses.get(claim_id) != status
     )
     return changed, decision != baseline_decision
 
@@ -123,10 +218,16 @@ def _record_for_subset(
     if not changed_claims and not decision_changed:
         return None, decision, statuses
 
-    synergy = len(subset) > 1 and not any(singleton_changed.get(item.clause_id, False) for item in subset)
+    synergy = len(subset) > 1 and not any(
+        singleton_changed.get(item.clause_id, False) for item in subset
+    )
     concepts = sorted({concept for item in subset for concept in item.concepts})
     modalities = sorted({item.modality for item in subset})
-    precedence = [record.to_dict() for record in resolutions if set(record.loser_clause_ids) & {item.clause_id for item in subset}]
+    precedence = [
+        record.to_dict()
+        for record in resolutions
+        if set(record.loser_clause_ids) & {item.clause_id for item in subset}
+    ]
     score = sum(item.score for item in subset) / max(1, len(subset))
     if synergy:
         score = clamp(score + 0.15)
@@ -179,7 +280,7 @@ def _evaluate_pool(
 
     for item in pool:
         tested += 1
-        record, decision, statuses = _record_for_subset(
+        record, decision, _statuses = _record_for_subset(
             (item,),
             claims,
             evidence,
@@ -189,8 +290,7 @@ def _evaluate_pool(
             baseline_decision,
             singleton_changed,
         )
-        changed = record is not None
-        singleton_changed[item.clause_id] = changed
+        singleton_changed[item.clause_id] = record is not None
         reachable.add(decision)
         if record:
             records.append(record)
@@ -267,19 +367,20 @@ def analyze_vita_decision_space(
 
     for round_index in range(1, max_rounds + 1):
         rounds_run = round_index
-        # Rank every available VITA clause, then expose only the configured
-        # budget. The untested score mass is reported as residual risk.
         all_candidates = _horizon_candidates(
-            question, claims, expanded, graph, max_candidates=max(1, len(graph.nodes))
+            question,
+            claims,
+            expanded,
+            graph,
+            max_candidates=max(1, len(graph.nodes)),
         )
         candidates = [item for item in all_candidates if item.clause_id not in existing]
         if use_provenance_robust_selection:
-            selection_universe = candidates[: max(max_candidates, boltzmann_max_candidates)]
             pool, selection_certificate = select_provenance_robust_candidates(
                 question,
                 claims,
                 expanded,
-                selection_universe,
+                candidates,
                 graph,
                 selection_budget=max_candidates,
             )
@@ -308,9 +409,12 @@ def analyze_vita_decision_space(
             residual_masses.append(attention_certificate.residual_probability_mass)
         else:
             pool = candidates[:max_candidates]
-            total_score = sum(max(0.0, item.score) for item in candidates)
-            tested_score = sum(max(0.0, item.score) for item in pool)
-            residual_masses.append(0.0 if total_score == 0 else clamp((total_score - tested_score) / total_score))
+            material = [item for item in candidates if item.score >= 0.10 or item.is_current]
+            total_score = sum(max(0.0, item.score) for item in material)
+            tested_score = sum(max(0.0, item.score) for item in pool if item in material)
+            residual_masses.append(
+                0.0 if total_score == 0 else clamp((total_score - tested_score) / total_score)
+            )
         tested_candidate_ids.update(item.clause_id for item in pool)
         if not pool:
             converged = True
@@ -328,9 +432,6 @@ def analyze_vita_decision_space(
         all_reachable.update(reachable)
         all_records.extend(records)
 
-        # Expand with clauses responsible for the strongest restrictive or
-        # synergistic changes. Permissive-only evidence is certified in the
-        # VITA candidate space but is not used to weaken the fail-safe answer.
         selected_ids: list[str] = []
         for record in records:
             if record.risk_direction != "more_restrictive" and not record.synergy:
@@ -362,33 +463,85 @@ def analyze_vita_decision_space(
     baseline_resolutions = resolve_precedence(evidence, graph)
     baseline_validations = validate_claims(claims, evidence, graph, baseline_resolutions)
     baseline_decision = _vita_decision(
-        candidate_decision, claims, evidence, baseline_validations, baseline_resolutions
+        candidate_decision,
+        claims,
+        evidence,
+        baseline_validations,
+        baseline_resolutions,
     )
     final_decision = _vita_decision(
-        candidate_decision, claims, expanded, validations, resolutions
+        candidate_decision,
+        claims,
+        expanded,
+        validations,
+        resolutions,
     )
     all_reachable.update({baseline_decision, final_decision})
 
-    ordered = sorted(all_reachable, key=lambda decision: (SEVERITY.get(decision, 2), decision))
+    ordered = sorted(
+        all_reachable,
+        key=lambda decision: (SEVERITY.get(decision, 2), decision),
+    )
     permissive = ordered[0] if ordered else baseline_decision
     restrictive = ordered[-1] if ordered else baseline_decision
     width = SEVERITY.get(restrictive, 2) - SEVERITY.get(permissive, 2)
+    decisive_ids = {claim.id for claim in claims if claim.decisive}
     synergistic = [record for record in all_records if record.synergy]
-    restrictive_records = [record for record in all_records if record.risk_direction == "more_restrictive"]
+    material_synergistic = [
+        record
+        for record in synergistic
+        if record.decision_before != record.decision_after
+        or bool(set(record.changed_claim_ids) & decisive_ids)
+    ]
+    restrictive_records = [
+        record for record in all_records if record.risk_direction == "more_restrictive"
+    ]
     status_changes = [record for record in all_records if record.changed_claim_ids]
+    nondecisive_status_changes = [
+        record
+        for record in status_changes
+        if not (set(record.changed_claim_ids) & decisive_ids)
+    ]
+    selection_certificate = merge_selection_certificates(question, selection_rounds)
+
     review_reasons: list[str] = []
-    if synergistic:
-        review_reasons.append("coalitional closure found interacting omitted clauses that singleton tests missed")
+    advisory_reasons: list[str] = []
+    if material_synergistic:
+        review_reasons.append(
+            "coalitional closure found interacting omitted clauses that change the decision or a decisive claim"
+        )
+    elif synergistic:
+        advisory_reasons.append(
+            "coalitional closure found a status-only interaction outside the decisive claim set"
+        )
     if restrictive_records:
         review_reasons.append("the decision space contains a more restrictive reachable decision")
     if width > 0:
         review_reasons.append("the answer is not invariant across the tested evidence search space")
+    elif nondecisive_status_changes:
+        advisory_reasons.append("non-decisive claim statuses vary across the tested evidence space")
+
     residual = max(residual_masses, default=0.0)
-    residual_threshold = 0.35 if use_boltzmann_attention else (0.30 if use_provenance_robust_selection else 0.25)
-    if residual > residual_threshold:
-        review_reasons.append("a material fraction of VITA attention or ranked risk remained outside the coalition budget")
+    if residual > 0.30:
+        advisory_reasons.append(
+            "ranked evidence risk remains outside the bounded coalition budget"
+        )
+    incomplete_pro_selection = bool(
+        selection_certificate
+        and (
+            selection_certificate.claim_coverage < 0.75
+            or selection_certificate.current_evidence_rate < 0.50
+        )
+    )
+    if residual > 0.75 and (not converged or incomplete_pro_selection):
+        review_reasons.append(
+            "severe residual risk remains together with incomplete decisive or current-evidence coverage"
+        )
     if not converged:
-        review_reasons.append("bounded closure stopped before a fixed point was established")
+        if restrictive_records or material_synergistic:
+            review_reasons.append("bounded closure stopped before material decision risk reached a fixed point")
+        else:
+            advisory_reasons.append("bounded closure stopped before a complete fixed point was established")
 
     digest = stable_hash(
         "|".join(sorted(existing))
@@ -399,7 +552,6 @@ def analyze_vita_decision_space(
         ),
         16,
     )
-    selection_certificate = merge_selection_certificates(question, selection_rounds)
     certificate = VITACertificate(
         certificate_id=f"vita:{stable_hash(question + candidate_decision + digest)}",
         baseline_decision=baseline_decision,
@@ -419,6 +571,8 @@ def analyze_vita_decision_space(
         review_reasons=review_reasons,
         graph_digest=digest,
         selection_certificate=selection_certificate.to_dict() if selection_certificate else None,
+        final_decision=final_decision,
+        advisory_reasons=advisory_reasons,
     )
     boltzmann_certificate = merge_attention_certificates(question, attention_rounds)
     argumentation = build_argumentation_certificate(expanded, graph, resolutions)
@@ -429,4 +583,12 @@ def analyze_vita_decision_space(
         candidate_decision,
         focus_clause_ids=[item.clause_id for item in expanded],
     )
-    return certificate, expanded, resolutions, validations, argumentation, temporal, boltzmann_certificate
+    return (
+        certificate,
+        expanded,
+        resolutions,
+        validations,
+        argumentation,
+        temporal,
+        boltzmann_certificate,
+    )

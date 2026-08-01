@@ -2,21 +2,11 @@ from __future__ import annotations
 
 """Deterministic provenance-robust policy selection.
 
-The selector is designed for the evidence-completeness stage of VITA.  Unlike
-Boltzmann Policy Attention, it does not spread probability over many nearly
-equivalent coalitions.  It greedily maximizes a transparent submodular-style
-objective that rewards:
-
-* claim and question coverage;
-* complete source/version/path provenance;
-* current and higher-authority clauses;
-* independent support from distinct sources;
-* explicit contradiction, override, and version-risk relations; and
-* concept diversity.
-
-Near-duplicate clauses from the same source/version are penalized.  The result
-is deterministic for a fixed graph and query, which makes ablations and paired
-comparisons easier to interpret.
+The selector greedily maximizes a transparent submodular-style objective. It
+prioritizes decisive-claim coverage, current and authoritative evidence,
+explicit risk relations, complete provenance, and independent corroboration.
+Diversity is useful only after relevance and version safety are established;
+stale or unrelated clauses must not displace decisive current evidence.
 """
 
 from dataclasses import asdict, dataclass
@@ -25,10 +15,11 @@ from typing import Any
 from .graph import PropertyGraph, infer_concepts
 from .models import AtomicClaim
 from .retrieval import Evidence
-from .utils import clamp, stable_hash, token_similarity
+from .utils import clamp, stable_hash, strip_citations, token_similarity
 
 
 RISK_RELATIONS = {"CONTRADICTS", "POTENTIAL_CONFLICT", "OVERRIDES", "SUPERSEDES"}
+DIRECT_RISK_RELATIONS = {"CONTRADICTS", "OVERRIDES", "SUPERSEDES"}
 
 
 @dataclass(frozen=True)
@@ -64,48 +55,75 @@ def _provenance_complete(item: Evidence) -> float:
     return sum(fields) / len(fields)
 
 
-def _risk_signal(item: Evidence, selected: list[Evidence], initial: list[Evidence], graph: PropertyGraph) -> float:
+def _edge_types(graph: PropertyGraph, left: str, right: str) -> set[str]:
+    return {edge.type for edge in graph.edge_between(left, right)}
+
+
+def _risk_signal(
+    item: Evidence,
+    selected: list[Evidence],
+    initial: list[Evidence],
+    graph: PropertyGraph,
+) -> float:
     others = initial + selected
     if not others:
         return 0.0
     best = 0.0
     for other in others:
-        edge_types = {edge.type for edge in graph.edge_between(item.clause_id, other.clause_id)}
+        edge_types = _edge_types(graph, item.clause_id, other.clause_id)
         if "CONTRADICTS" in edge_types:
             best = max(best, 1.0)
         if "OVERRIDES" in edge_types or "SUPERSEDES" in edge_types:
-            best = max(best, 0.95)
+            best = max(best, 0.98)
         if "POTENTIAL_CONFLICT" in edge_types:
-            best = max(best, 0.85)
+            best = max(best, 0.82)
         if item.source == other.source and item.version != other.version:
-            best = max(best, 0.75)
+            best = max(best, 0.72)
         if set(item.concepts) & set(other.concepts) and item.modality != other.modality:
-            best = max(best, 0.65)
+            best = max(best, 0.38)
     return best
+
+
+def _direct_risk(item: Evidence, initial: list[Evidence], graph: PropertyGraph) -> bool:
+    return any(
+        bool(_edge_types(graph, item.clause_id, other.clause_id) & DIRECT_RISK_RELATIONS)
+        for other in initial
+    )
 
 
 def _redundancy(item: Evidence, selected: list[Evidence], initial: list[Evidence]) -> float:
     best = 0.0
     for other in initial + selected:
-        lexical = token_similarity(item.text, other.text)
+        lexical = token_similarity(strip_citations(item.text), strip_citations(other.text))
         same_origin = item.source == other.source and item.version == other.version
-        penalty = lexical * (1.0 if same_origin else 0.55)
+        penalty = lexical * (1.0 if same_origin else 0.48)
         best = max(best, penalty)
     return clamp(best)
 
 
-def _claim_relevance(item: Evidence, claims: list[AtomicClaim], question: str) -> tuple[float, list[str]]:
-    rows: list[tuple[float, str]] = []
+def _claim_relevance(
+    item: Evidence,
+    claims: list[AtomicClaim],
+    question: str,
+) -> tuple[float, list[str], float]:
+    rows: list[tuple[float, str, bool]] = []
     for claim in claims:
+        clean_claim = strip_citations(claim.text)
         score = max(
-            token_similarity(claim.text, item.text),
-            token_similarity(" ".join(infer_concepts(claim.text)), " ".join(item.concepts)),
+            token_similarity(clean_claim, item.text),
+            token_similarity(
+                " ".join(infer_concepts(clean_claim)),
+                " ".join(item.concepts),
+            ),
         )
-        rows.append((score, claim.id))
-    question_score = token_similarity(question, item.text)
-    best = max([question_score] + [score for score, _ in rows], default=0.0)
-    covered = [claim_id for score, claim_id in rows if score >= 0.18]
-    return clamp(max(best, item.score)), covered
+        rows.append((score, claim.id, claim.decisive))
+    question_score = token_similarity(strip_citations(question), item.text)
+    semantic = max([question_score] + [score for score, _, _ in rows], default=0.0)
+    # Retrieval rank is a prior, not a substitute for semantic or graph relevance.
+    relevance = clamp(0.82 * semantic + 0.18 * clamp(item.score))
+    covered = [claim_id for score, claim_id, _ in rows if score >= 0.16]
+    decisive = max((score for score, _, is_decisive in rows if is_decisive), default=0.0)
+    return relevance, covered, decisive
 
 
 def _independent_support_gain(
@@ -114,22 +132,22 @@ def _independent_support_gain(
     selected: list[Evidence],
     initial: list[Evidence],
 ) -> float:
-    """Reward a new source that can independently support a claim."""
     existing = initial + selected
     gain = 0.0
     for claim in claims:
-        item_score = token_similarity(claim.text, item.text)
-        if item_score < 0.18:
+        clean_claim = strip_citations(claim.text)
+        item_score = token_similarity(clean_claim, item.text)
+        if item_score < 0.16:
             continue
         supporting_sources = {
             other.source
             for other in existing
-            if other.source and token_similarity(claim.text, other.text) >= 0.18
+            if other.source and token_similarity(clean_claim, other.text) >= 0.16
         }
         if item.source and item.source not in supporting_sources:
-            gain += 1.0 if supporting_sources else 0.65
+            gain += 1.0 if supporting_sources else 0.60
         elif item.source:
-            gain += 0.15
+            gain += 0.10
     return clamp(gain / max(1, len(claims)))
 
 
@@ -145,74 +163,95 @@ def select_provenance_robust_candidates(
     candidates = list(candidates)
     selected: list[Evidence] = []
     records: list[dict[str, Any]] = []
-    query_concepts = set(infer_concepts(question))
-    claim_concepts = {concept for claim in claims for concept in infer_concepts(claim.text)}
+    query_concepts = set(infer_concepts(strip_citations(question)))
+    claim_concepts = {
+        concept
+        for claim in claims
+        for concept in infer_concepts(strip_citations(claim.text))
+    }
     target_concepts = query_concepts | claim_concepts
     covered_claims: set[str] = set()
     covered_concepts = {concept for item in initial_evidence for concept in item.concepts}
     selected_sources = {item.source for item in initial_evidence if item.source}
 
     remaining = {item.clause_id: item for item in candidates}
-    total_positive_potential = 0.0
     candidate_potential: dict[str, float] = {}
-    max_authority = max(
-        [item.authority_rank for item in initial_evidence + candidates] or [1]
-    )
+    material_candidate_ids: set[str] = set()
+    max_authority = max([item.authority_rank for item in initial_evidence + candidates] or [1])
 
     for item in candidates:
-        relevance, _ = _claim_relevance(item, claims, question)
+        relevance, covered, decisive_relevance = _claim_relevance(item, claims, question)
         provenance = _provenance_complete(item)
-        temporal = 1.0 if item.is_current else 0.20
+        temporal = 1.0 if item.is_current else 0.0
         authority = clamp(item.authority_rank / max(1, max_authority))
         risk = _risk_signal(item, [], initial_evidence, graph)
+        direct_risk = _direct_risk(item, initial_evidence, graph)
+        material = (
+            relevance >= 0.13
+            or decisive_relevance >= 0.14
+            or risk >= 0.72
+            or direct_risk
+        ) and (item.is_current or risk >= 0.72 or direct_risk)
+        if material:
+            material_candidate_ids.add(item.clause_id)
         potential = (
-            0.34 * relevance
-            + 0.18 * provenance
-            + 0.14 * temporal
-            + 0.10 * authority
-            + 0.16 * risk
-            + 0.08 * (1.0 if set(item.concepts) & target_concepts else 0.0)
+            0.38 * relevance
+            + 0.16 * (1.0 if covered else 0.0)
+            + 0.12 * provenance
+            + 0.12 * temporal
+            + 0.08 * authority
+            + 0.14 * risk
         )
-        candidate_potential[item.clause_id] = max(0.0, potential)
-        total_positive_potential += max(0.0, potential)
+        if not item.is_current and not direct_risk and risk < 0.72:
+            potential *= 0.35
+        candidate_potential[item.clause_id] = max(0.0, potential) if material else 0.0
 
     while remaining and len(selected) < max(1, selection_budget):
         best_item: Evidence | None = None
         best_row: dict[str, Any] | None = None
-        best_score = float("-inf")
+        best_tie: tuple[float, int, int, int, float, str] | None = None
 
         for item in remaining.values():
-            relevance, claim_ids = _claim_relevance(item, claims, question)
+            relevance, claim_ids, decisive_relevance = _claim_relevance(item, claims, question)
             new_claims = len(set(claim_ids) - covered_claims) / max(1, len(claims))
             new_concepts_set = set(item.concepts) - covered_concepts
             concept_gain = len(new_concepts_set & target_concepts) / max(1, len(target_concepts))
             provenance = _provenance_complete(item)
-            temporal = 1.0 if item.is_current else 0.20
+            temporal = 1.0 if item.is_current else 0.0
             authority = clamp(item.authority_rank / max(1, max_authority))
-            source_gain = 1.0 if item.source and item.source not in selected_sources else 0.15
+            source_gain = 1.0 if item.source and item.source not in selected_sources else 0.10
             independent = _independent_support_gain(item, claims, selected, initial_evidence)
             risk = _risk_signal(item, selected, initial_evidence, graph)
+            direct_risk = _direct_risk(item, initial_evidence, graph)
             path_quality = 1.0 if item.graph_path else 0.0
             redundancy = _redundancy(item, selected, initial_evidence)
+            decisive_anchor = item.is_current and decisive_relevance >= 0.14
+            risk_anchor = item.is_current and (direct_risk or risk >= 0.82)
+            stale_penalty = 0.0 if item.is_current else (0.04 if direct_risk or risk >= 0.82 else 0.20)
 
             marginal = (
-                0.22 * relevance
-                + 0.14 * new_claims
-                + 0.08 * concept_gain
-                + 0.12 * provenance
-                + 0.09 * temporal
-                + 0.06 * authority
-                + 0.09 * source_gain
-                + 0.12 * independent
-                + 0.10 * risk
-                + 0.04 * path_quality
-                - 0.12 * redundancy
+                0.27 * relevance
+                + 0.17 * new_claims
+                + 0.06 * concept_gain
+                + 0.09 * provenance
+                + 0.11 * temporal
+                + 0.07 * authority
+                + 0.04 * source_gain
+                + 0.07 * independent
+                + 0.14 * risk
+                + 0.03 * path_quality
+                + 0.10 * decisive_relevance
+                + (0.10 if decisive_anchor else 0.0)
+                + (0.10 if risk_anchor else 0.0)
+                - 0.10 * redundancy
+                - stale_penalty
             )
             row = {
                 "clause_id": item.clause_id,
                 "citation_id": item.citation_id,
                 "marginal_score": round(marginal, 6),
                 "relevance": round(relevance, 6),
+                "decisive_relevance": round(decisive_relevance, 6),
                 "new_claim_coverage": round(new_claims, 6),
                 "new_concept_coverage": round(concept_gain, 6),
                 "provenance": round(provenance, 6),
@@ -221,18 +260,21 @@ def select_provenance_robust_candidates(
                 "source_diversity_gain": round(source_gain, 6),
                 "independent_support_gain": round(independent, 6),
                 "risk_relation_signal": round(risk, 6),
+                "direct_risk_relation": direct_risk,
+                "decisive_anchor": decisive_anchor,
                 "redundancy_penalty": round(redundancy, 6),
+                "stale_penalty": round(stale_penalty, 6),
             }
-            tie = (marginal, item.is_current, item.authority_rank, item.score, item.clause_id)
-            best_tie = (
-                best_score,
-                best_item.is_current if best_item else False,
-                best_item.authority_rank if best_item else -1,
-                best_item.score if best_item else -1.0,
-                best_item.clause_id if best_item else "",
+            tie = (
+                marginal,
+                int(decisive_anchor or risk_anchor),
+                int(item.is_current),
+                item.authority_rank,
+                item.score,
+                item.clause_id,
             )
-            if tie > best_tie:
-                best_score = marginal
+            if best_tie is None or tie > best_tie:
+                best_tie = tie
                 best_item = item
                 best_row = row
 
@@ -241,16 +283,22 @@ def select_provenance_robust_candidates(
         selected.append(best_item)
         records.append(best_row or {})
         remaining.pop(best_item.clause_id, None)
-        _, claim_ids = _claim_relevance(best_item, claims, question)
+        _, claim_ids, _ = _claim_relevance(best_item, claims, question)
         covered_claims.update(claim_ids)
         covered_concepts.update(best_item.concepts)
         if best_item.source:
             selected_sources.add(best_item.source)
 
     selected_ids = {item.clause_id for item in selected}
-    selected_potential = sum(candidate_potential.get(item_id, 0.0) for item_id in selected_ids)
-    residual = 0.0 if total_positive_potential <= 1e-12 else clamp(
-        (total_positive_potential - selected_potential) / total_positive_potential
+    total_material_potential = sum(
+        candidate_potential[item_id] for item_id in material_candidate_ids
+    )
+    selected_potential = sum(
+        candidate_potential.get(item_id, 0.0)
+        for item_id in selected_ids & material_candidate_ids
+    )
+    residual = 0.0 if total_material_potential <= 1e-12 else clamp(
+        (total_material_potential - selected_potential) / total_material_potential
     )
     selected_sources_only = {item.source for item in selected if item.source}
     all_sources = {item.source for item in candidates if item.source}
@@ -264,7 +312,7 @@ def select_provenance_robust_candidates(
         for idx, item in enumerate(selected)
     ) / max(1, len(selected))
     risk_coverage = sum(
-        1 for item in selected if _risk_signal(item, selected, initial_evidence, graph) >= 0.65
+        1 for item in selected if _risk_signal(item, selected, initial_evidence, graph) >= 0.72
     ) / max(1, len(selected))
     objective = sum(float(row.get("marginal_score", 0.0)) for row in records)
 
@@ -316,7 +364,10 @@ def merge_selection_certificates(
             if value not in selected_citation_ids:
                 selected_citation_ids.append(value)
         records.extend(certificate.selected_records)
-    avg = lambda name: sum(float(getattr(c, name)) for c in certificates) / len(certificates)
+
+    def avg(name: str) -> float:
+        return sum(float(getattr(certificate, name)) for certificate in certificates) / len(certificates)
+
     digest = stable_hash(
         question + "|" + "|".join(sorted(candidate_ids)) + "|" + "|".join(selected_clause_ids),
         16,

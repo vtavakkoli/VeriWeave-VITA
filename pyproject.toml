@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "veriweave-vita-pro"
-version = "4.2.0"
+version = "4.2.1"
 description = "Provenance-robust verification, temporal reasoning, and argumentation for auditable LLM policy decisions"
 readme = "README.md"
 requires-python = ">=3.11"
