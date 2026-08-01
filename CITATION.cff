@@ -6,8 +6,8 @@ abstract: "Research software for provenance-robust evidence optimization, counte
 authors:
   - family-names: "Tavakkoli"
     given-names: "Vahid"
-version: 4.2.0
-date-released: 2026-07-31
+version: 4.2.1
+date-released: 2026-08-01
 license: Apache-2.0
 repository-code: "https://github.com/vtavakkoli/VeriWeave-VITA"
 url: "https://github.com/vtavakkoli/VeriWeave-VITA"
