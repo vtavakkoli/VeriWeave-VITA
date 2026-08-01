@@ -52,15 +52,16 @@ _REVIEW_PATTERNS = (
     r"requires? (?:a )?(?:trained )?human (?:review|oversight)",
     r"must (?:be )?reviewed by (?:a )?human",
     r"must not .* without (?:a )?(?:trained )?human (?:review|oversight)",
+    r"prohibit(?:s|ed)? .* without (?:a )?(?:trained )?human (?:review|oversight)",
     r"(?:review|approval|oversight) (?:is )?required before",
     r"must (?:be )?approved before",
     r"must approve before",
+    r"only (?:with|after) (?:a )?(?:trained )?human (?:review|oversight)",
 )
 
 
 def _requires_human_review(text: str) -> bool:
     lower = f" {strip_citations(text).lower()} "
-    # Merely logging whether review occurred is not itself a review mandate.
     if "human-review flag" in lower or "human review flag" in lower:
         return False
     return any(re.search(pattern, lower) for pattern in _REVIEW_PATTERNS)
@@ -93,11 +94,35 @@ def _relevant_winning_evidence(
         for item in evidence
         if item.clause_id in winners and item.citation_id in citation_ids
     ]
+    seen = {item.clause_id for item in relevant}
+
+    # Preserve VITA's two-sided decision-space property: a current winning
+    # normative clause may expose an over-conservative answer even when it is
+    # not the primary support passage for an explanatory claim. Requiring both
+    # concept and lexical agreement prevents the old concept-only overreach.
+    for item in evidence:
+        if (
+            item.clause_id not in winners
+            or item.clause_id in seen
+            or not item.is_current
+            or item.modality not in {"permission", "obligation", "prohibition"}
+        ):
+            continue
+        best_lexical = max(
+            (token_similarity(strip_citations(claim.text), item.text) for claim in targets),
+            default=0.0,
+        )
+        concept_match = any(
+            bool(set(infer_concepts(strip_citations(claim.text))) & set(item.concepts))
+            for claim in targets
+        )
+        if concept_match and best_lexical >= 0.22:
+            relevant.append(item)
+            seen.add(item.clause_id)
+
     if relevant:
         return relevant
 
-    # Conservative fallback for old traces or claim extractors that did not
-    # preserve the winning citation identifiers.
     fallback: list[Evidence] = []
     for item in evidence:
         if item.clause_id not in winners:
@@ -105,8 +130,8 @@ def _relevant_winning_evidence(
         for claim in targets:
             clean_claim = strip_citations(claim.text)
             concept_match = bool(set(infer_concepts(clean_claim)) & set(item.concepts))
-            lexical_match = token_similarity(clean_claim, item.text) >= 0.24
-            if concept_match and lexical_match or lexical_match >= 0.24:
+            lexical = token_similarity(clean_claim, item.text)
+            if concept_match and lexical >= 0.22:
                 fallback.append(item)
                 break
     return fallback
@@ -351,8 +376,6 @@ def analyze_vita_decision_space(
         )
         candidates = [item for item in all_candidates if item.clause_id not in existing]
         if use_provenance_robust_selection:
-            # PRO must inspect the complete ranked universe. Truncating before
-            # provenance optimization can hide a decisive current-version rule.
             pool, selection_certificate = select_provenance_robust_candidates(
                 question,
                 claims,
