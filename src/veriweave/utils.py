@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9_-]*", re.IGNORECASE)
+CITATION_BLOCK_RE = re.compile(r"\[([^\]]+)\]")
 STOPWORDS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "has", "have", "if", "in",
     "is", "it", "may", "must", "of", "on", "or", "should", "that", "the", "this", "to", "with",
@@ -22,6 +23,33 @@ def append_jsonl(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(obj, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def extract_citation_ids(text: str) -> list[str]:
+    """Extract inline evidence identifiers without treating arbitrary brackets as citations."""
+    values: list[str] = []
+    for block in CITATION_BLOCK_RE.findall(text or ""):
+        for part in re.split(r"\s*,\s*|\s+", block.strip()):
+            value = part.strip().strip(";,.")
+            if not value:
+                continue
+            if "#" not in value and "@" not in value and ".md" not in value.lower():
+                continue
+            if value not in values:
+                values.append(value)
+    return values
+
+
+def strip_citations(text: str) -> str:
+    """Remove inline evidence identifiers before lexical and modality analysis."""
+    def replace(match: re.Match[str]) -> str:
+        block = match.group(1)
+        parts = [part.strip().strip(";,.") for part in re.split(r"\s*,\s*|\s+", block)]
+        if any("#" in part or "@" in part or ".md" in part.lower() for part in parts):
+            return " "
+        return match.group(0)
+
+    return re.sub(r"\s+", " ", CITATION_BLOCK_RE.sub(replace, text or "")).strip()
 
 
 def token_list(text: str, *, remove_stopwords: bool = False) -> list[str]:
