@@ -4,32 +4,51 @@ from .graph import PropertyGraph, infer_modality
 from .models import AtomicClaim, ClaimValidation, ResolutionRecord
 from .precedence import winning_clause_ids
 from .retrieval import Evidence
-from .utils import clamp, containment, token_similarity, tokens
+from .utils import (
+    clamp,
+    containment,
+    extract_citation_ids,
+    strip_citations,
+    token_similarity,
+    tokens,
+)
 
 NEGATION_MARKERS = {"not", "no", "never", "prohibited", "forbidden", "without", "cannot"}
 
 
 def _negated(text: str) -> bool:
-    return bool(tokens(text, remove_stopwords=False) & NEGATION_MARKERS)
+    return bool(tokens(strip_citations(text), remove_stopwords=False) & NEGATION_MARKERS)
 
 
 def _support_score(claim: str, evidence: Evidence) -> float:
-    score = 0.58 * containment(claim, evidence.text) + 0.42 * token_similarity(claim, evidence.text)
-    claim_modality = infer_modality(claim)
+    clean_claim = strip_citations(claim)
+    score = 0.58 * containment(clean_claim, evidence.text) + 0.42 * token_similarity(clean_claim, evidence.text)
+    claim_modality = infer_modality(clean_claim)
     incompatible = (
         claim_modality == "permission" and evidence.modality in {"prohibition", "obligation"}
     ) or (
         claim_modality == "prohibition" and evidence.modality == "permission"
     )
-    return score * (0.35 if incompatible else 1.0)
+    if incompatible:
+        score *= 0.35
+
+    # An exact inline citation is a strong grounding signal, but it cannot make
+    # semantically unrelated text fully supported by itself.
+    if evidence.citation_id in extract_citation_ids(claim):
+        score = max(score, 0.56 + 0.34 * score)
+    return clamp(score)
 
 
 def _contradiction_score(claim: str, evidence: Evidence, graph: PropertyGraph) -> float:
-    lexical = token_similarity(claim, evidence.text)
-    polarity_mismatch = _negated(claim) != _negated(evidence.text)
-    graph_conflict = any(edge.type in {"CONTRADICTS", "POTENTIAL_CONFLICT"} for edge in graph.outgoing.get(evidence.clause_id, []))
-    role_conflict = evidence.role == "counterevidence"
-    claim_modality = infer_modality(claim)
+    clean_claim = strip_citations(claim)
+    lexical = token_similarity(clean_claim, evidence.text)
+    polarity_mismatch = _negated(clean_claim) != _negated(evidence.text)
+    graph_conflict = any(
+        edge.type in {"CONTRADICTS", "POTENTIAL_CONFLICT"}
+        for edge in graph.outgoing.get(evidence.clause_id, [])
+    )
+    role_conflict = evidence.role == "counterevidence" or "counterevidence" in evidence.role
+    claim_modality = infer_modality(clean_claim)
     modality_conflict = (
         claim_modality == "permission" and evidence.modality in {"prohibition", "obligation"}
     ) or (
@@ -38,8 +57,8 @@ def _contradiction_score(claim: str, evidence: Evidence, graph: PropertyGraph) -
     return clamp(
         (0.55 * lexical if polarity_mismatch else 0.0)
         + (0.45 * lexical if modality_conflict else 0.0)
-        + (0.20 if graph_conflict else 0.0)
-        + (0.10 if role_conflict else 0.0)
+        + (0.20 if graph_conflict and lexical >= 0.08 else 0.0)
+        + (0.10 if role_conflict and lexical >= 0.08 else 0.0)
     )
 
 
@@ -51,16 +70,25 @@ def validate_claim(
 ) -> ClaimValidation:
     resolutions = resolutions or []
     winners = winning_clause_ids(evidence, resolutions)
-    ranked = sorted(((_support_score(claim.text, item), item) for item in evidence), key=lambda item: item[0], reverse=True)
+    ranked = sorted(
+        ((_support_score(claim.text, item), item) for item in evidence),
+        key=lambda row: (row[0], row[1].is_current, row[1].authority_rank, row[1].score, row[1].clause_id),
+        reverse=True,
+    )
     best_support = ranked[0][0] if ranked else 0.0
-    threshold = max(0.19, best_support * 0.70)
+    threshold = max(0.20, best_support * 0.72)
     supporting = [item for score, item in ranked if score >= threshold and item.clause_id in winners][:3]
 
-    counter_ranked = sorted(((_contradiction_score(claim.text, item, graph), item) for item in evidence), key=lambda item: item[0], reverse=True)
+    counter_ranked = sorted(
+        ((_contradiction_score(claim.text, item, graph), item) for item in evidence),
+        key=lambda row: (row[0], row[1].is_current, row[1].authority_rank, row[1].clause_id),
+        reverse=True,
+    )
     contradiction = counter_ranked[0][0] if counter_ranked else 0.0
     counterevidence = [item for score, item in counter_ranked if score >= 0.38][:3]
 
-    claim_tokens = tokens(claim.text)
+    clean_claim = strip_citations(claim.text)
+    claim_tokens = tokens(clean_claim)
     concept_tokens: set[str] = set()
     for item in supporting:
         concept_tokens |= set(item.concepts)
@@ -72,11 +100,18 @@ def validate_claim(
     current_support = any(item.is_current for item in supporting)
     temporal = 1.0 if not version_sensitive else (1.0 if current_support else 0.0)
 
-    provenance = bool(supporting) and all(item.source and item.version and item.citation_id and item.graph_path for item in supporting)
-    unresolved_conflict = any(record.unresolved for record in resolutions if set(record.loser_clause_ids) & {item.clause_id for item in supporting + counterevidence})
+    provenance = bool(supporting) and all(
+        item.source and item.version and item.citation_id and item.graph_path for item in supporting
+    )
+    relevant_clause_ids = {item.clause_id for item in supporting + counterevidence}
+    unresolved_conflict = any(
+        record.unresolved
+        and bool(set(record.loser_clause_ids) & relevant_clause_ids)
+        for record in resolutions
+    )
 
     reasons: list[str] = []
-    if best_support < 0.19:
+    if best_support < 0.20:
         reasons.append("no sufficiently similar supporting clause")
     if contradiction >= 0.45:
         reasons.append("counterevidence or a graph conflict challenges the claim")
@@ -91,7 +126,7 @@ def validate_claim(
 
     if contradiction >= 0.45 and not supporting:
         status = "contradicted"
-    elif best_support >= 0.19 and supporting and provenance and temporal == 1.0 and not unresolved_conflict:
+    elif best_support >= 0.20 and supporting and provenance and temporal == 1.0 and not unresolved_conflict:
         status = "supported"
     elif contradiction >= 0.55:
         status = "contradicted"
