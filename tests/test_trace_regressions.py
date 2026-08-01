@@ -40,6 +40,24 @@ def evidence(
     )
 
 
+def add_evidence_node(graph: PropertyGraph, item: Evidence) -> None:
+    graph.add_node(Node(
+        item.clause_id,
+        "Clause",
+        item.clause_id,
+        {
+            "text": item.text,
+            "citation_id": item.citation_id,
+            "source": item.source,
+            "version": item.version,
+            "concepts": item.concepts,
+            "modality": item.modality,
+            "is_current": item.is_current,
+            "authority_rank": item.authority_rank,
+        },
+    ))
+
+
 def supported_validation(claim: AtomicClaim, citation: str) -> ClaimValidation:
     return ClaimValidation(
         claim_id=claim.id,
@@ -61,13 +79,9 @@ class TraceRegressionTests(unittest.TestCase):
     def test_inline_citations_do_not_pollute_semantic_text(self):
         text = "The pilot requires security review. [pilot-policy-v2.md#controls@v2]"
         self.assertEqual(strip_citations(text), "The pilot requires security review.")
-        self.assertEqual(
-            extract_citation_ids(text),
-            ["pilot-policy-v2.md#controls@v2"],
-        )
+        self.assertEqual(extract_citation_ids(text), ["pilot-policy-v2.md#controls@v2"])
 
     def test_human_review_condition_is_not_a_categorical_ban(self):
-        graph = PropertyGraph()
         item = evidence(
             "clause:review",
             "high-risk.md#review@v2",
@@ -77,21 +91,22 @@ class TraceRegressionTests(unittest.TestCase):
         )
         claim = AtomicClaim(
             "claim:decision",
-            "The system must not make benefits decisions without trained human review.",
+            item.text,
             kind="decision",
             decisive=True,
         )
-        decision = _vita_decision(
-            "not_allowed",
-            [claim],
-            [item],
-            [supported_validation(claim, item.citation_id)],
-            [],
+        self.assertEqual(
+            _vita_decision(
+                "not_allowed",
+                [claim],
+                [item],
+                [supported_validation(claim, item.citation_id)],
+                [],
+            ),
+            "needs_review",
         )
-        self.assertEqual(decision, "needs_review")
 
     def test_unconditional_prohibition_remains_not_allowed(self):
-        graph = PropertyGraph()
         item = evidence(
             "clause:ban",
             "biometrics.md#ban@v2",
@@ -99,20 +114,17 @@ class TraceRegressionTests(unittest.TestCase):
             "prohibition",
             ["biometrics"],
         )
-        claim = AtomicClaim(
-            "claim:ban",
-            "Real-time biometric categorization is prohibited.",
-            kind="decision",
-            decisive=True,
-        )
-        decision = _vita_decision(
+        claim = AtomicClaim("claim:ban", item.text, kind="decision", decisive=True)
+        self.assertEqual(
+            _vita_decision(
+                "not_allowed",
+                [claim],
+                [item],
+                [supported_validation(claim, item.citation_id)],
+                [],
+            ),
             "not_allowed",
-            [claim],
-            [item],
-            [supported_validation(claim, item.citation_id)],
-            [],
         )
-        self.assertEqual(decision, "not_allowed")
 
     def test_unrelated_sources_are_not_false_version_conflicts(self):
         graph = PropertyGraph()
@@ -167,6 +179,8 @@ class TraceRegressionTests(unittest.TestCase):
             ["auditability"],
             score=0.99,
         )
+        add_evidence_node(graph, current)
+        add_evidence_node(graph, stale)
         graph.add_edge(Edge("clause:current", "clause:stale", "CONTRADICTS"))
         claim = AtomicClaim(
             "claim:review",
@@ -240,44 +254,21 @@ class TraceRegressionTests(unittest.TestCase):
 
     def test_residual_search_mass_is_reported_without_forcing_review(self):
         graph = PropertyGraph()
-        graph.add_node(Node(
-            "clause:base",
-            "Clause",
-            "Scope",
-            {
-                "text": "The policy covers audit records.",
-                "citation_id": "audit.md#scope@v2",
-                "source": "audit.md",
-                "version": "v2",
-                "concepts": ["auditability"],
-                "modality": "guidance",
-                "is_current": True,
-                "authority_rank": 2,
-            },
-        ))
-        initial = [evidence(
+        base = evidence(
             "clause:base",
             "audit.md#scope@v2",
             "The policy covers audit records.",
             "guidance",
             ["auditability"],
-        )]
+        )
+        add_evidence_node(graph, base)
         for index in range(5):
-            clause_id = f"clause:extra:{index}"
-            graph.add_node(Node(
-                clause_id,
-                "Clause",
-                f"Audit detail {index}",
-                {
-                    "text": f"Audit records include detail {index}.",
-                    "citation_id": f"audit-{index}.md#detail@v2",
-                    "source": f"audit-{index}.md",
-                    "version": "v2",
-                    "concepts": ["auditability"],
-                    "modality": "guidance",
-                    "is_current": True,
-                    "authority_rank": 2,
-                },
+            add_evidence_node(graph, evidence(
+                f"clause:extra:{index}",
+                f"audit-{index}.md#detail@v2",
+                f"Audit records include detail {index}.",
+                "guidance",
+                ["auditability"],
             ))
         claim = AtomicClaim(
             "claim:scope",
@@ -288,7 +279,7 @@ class TraceRegressionTests(unittest.TestCase):
         certificate, *_ = analyze_vita_decision_space(
             "Does the policy cover audit records?",
             [claim],
-            initial,
+            [base],
             graph,
             "allowed",
             max_candidates=1,
