@@ -9,7 +9,8 @@ def main() -> None:
         prog="veriweave",
         description="Run VeriWeave-VITA-PRO with provenance-robust evidence selection and counterfactual certification.",
     )
-    parser.add_argument("--max-tasks", type=int, help="Evaluate only the first N tasks (0 means all).")
+    parser.add_argument("--task-offset", type=int, help="Skip the first N benchmark tasks before evaluation.")
+    parser.add_argument("--max-tasks", type=int, help="Evaluate at most N tasks after the offset (0 means all).")
     parser.add_argument("--top-k", type=int, help="Number of primary evidence items to retrieve.")
     parser.add_argument("--model", help="Ollama model identifier.")
     parser.add_argument("--benchmark", help="Path to the JSONL benchmark.")
@@ -27,6 +28,7 @@ def main() -> None:
     args = parser.parse_args()
 
     mappings = {
+        "TASK_OFFSET": args.task_offset,
         "MAX_TASKS": args.max_tasks,
         "TOP_K": args.top_k,
         "OLLAMA_MODEL": args.model,
